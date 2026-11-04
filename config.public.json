@@ -1,0 +1,283 @@
+{
+  "first_run_lookback_days": 30,
+  "lookback_days": 5,
+  "sources": [
+    {
+      "name": "وزارة التنمية الإدارية",
+      "type": "telegram",
+      "channel": "SyMOAD",
+      "trusted_gov": true,
+      "max_pages": 10
+    },
+    {
+      "name": "بوابة التوظيف (tawzeefportal) — حماة",
+      "type": "tawzeef",
+      "state_id": 14
+    },
+    {
+      "name": "بوابة الوظائف — وزارة التنمية الإدارية",
+      "type": "webpage",
+      "url": "https://moad.gov.sy/recruitment/jobs?governorates=4",
+      "empty_marker": "لا توجد وظائف متاحة حالياً",
+      "start_after": "جميع الوظائف في محافظة حماة"
+    },
+    {
+      "name": "مديرية التربية في حماة (تيلغرام)",
+      "type": "telegram",
+      "channel": "altarbia_hama",
+      "trusted_gov": true,
+      "assume_hama": true,
+      "max_pages": 4
+    },
+    {
+      "name": "مديرية صحة حماة (تيلغرام)",
+      "type": "telegram",
+      "channel": "hamahelth",
+      "trusted_gov": true,
+      "assume_hama": true,
+      "max_pages": 4
+    },
+    {
+      "name": "مديرية أوقاف حماة (تيلغرام)",
+      "type": "telegram",
+      "channel": "HamaEndowments",
+      "trusted_gov": true,
+      "assume_hama": true,
+      "max_pages": 4
+    },
+    {
+      "name": "قناة Syrian Job (#حماة)",
+      "type": "telegram",
+      "channel": "syrian_jobb",
+      "query": "#حماة",
+      "max_pages": 4
+    },
+    {
+      "name": "محافظة حماة (تيلغرام)",
+      "type": "telegram",
+      "channel": "HamaGov1",
+      "trusted_gov": true,
+      "assume_hama": true,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة التربية والتعليم (تيلغرام)",
+      "type": "telegram",
+      "channel": "TrbyaGov",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة التعليم العالي (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOHEASR",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الأوقاف (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOfE",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الثقافة (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrSMOC",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الإعلام (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOIGov",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الشؤون الاجتماعية والعمل (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOSAAL",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الإدارة المحلية والبيئة (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOLAAE",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الداخلية (تيلغرام)",
+      "type": "telegram",
+      "channel": "syrianmoi",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة العدل (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrMOfj",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الصحة (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrMOfH",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة المالية (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrMOfF",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الاقتصاد والصناعة (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOEAI",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الزراعة (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrMOfA",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الاتصالات (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOCAIT",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الطاقة (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrMOfE",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الأشغال العامة (تيلغرام)",
+      "type": "telegram",
+      "channel": "MOPWAH",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة النقل (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrSMOT",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة السياحة (تيلغرام)",
+      "type": "telegram",
+      "channel": "SySMOfT",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الرياضة والشباب (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyrMOYAS",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "وزارة الطوارئ والكوارث (تيلغرام)",
+      "type": "telegram",
+      "channel": "SyMOEADM",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "الجهاز المركزي للرقابة المالية (تيلغرام)",
+      "type": "telegram",
+      "channel": "CAFFControl",
+      "trusted_gov": true,
+      "assume_hama": false,
+      "max_pages": 3
+    },
+    {
+      "name": "سانا",
+      "type": "rss",
+      "url": "https://sana.sy/?s=شواغر&feed=rss2"
+    },
+    {
+      "name": "سانا",
+      "type": "rss",
+      "url": "https://sana.sy/?s=مسابقة&feed=rss2"
+    },
+    {
+      "name": "سانا",
+      "type": "rss",
+      "url": "https://sana.sy/?s=تعاقد&feed=rss2"
+    },
+    {
+      "name": "سانا",
+      "type": "rss",
+      "url": "https://sana.sy/?s=توظيف&feed=rss2"
+    },
+    {
+      "name": "سانا",
+      "type": "rss",
+      "url": "https://sana.sy/?s=حماة+حاجتها&feed=rss2"
+    },
+    {
+      "name": "صحيفة الفداء (إعلانات)",
+      "type": "rss",
+      "url": "https://fedaa.alwehda.gov.sy/?s=إعلان&feed=rss2",
+      "assume_hama": true,
+      "split_ads": true
+    },
+    {
+      "name": "صحيفة الفداء",
+      "type": "rss",
+      "url": "https://fedaa.alwehda.gov.sy/?s=شواغر&feed=rss2",
+      "assume_hama": true
+    },
+    {
+      "name": "صحيفة الفداء",
+      "type": "rss",
+      "url": "https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2",
+      "assume_hama": true
+    }
+  ],
+  "facebook": {
+    "enabled": true,
+    "headless": true,
+    "scrolls": 4,
+    "pages": [],
+    "searches": []
+  }
+}
