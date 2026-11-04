@@ -1,16 +1,30 @@
 name: probe-sources
 on:
   workflow_dispatch:
+    inputs:
+      replay:
+        description: 'قارن قاعدة الحكم القديمة بالجديدة على آخر 30 يومًا'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      TZ: Asia/Damascus
+      PYTHONUTF8: '1'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - run: pip install requests
-      - run: python probe.py
+          cache: pip
+      - run: pip install -q -r requirements.txt
+      - name: فحص الوصول
+        if: inputs.replay != true
+        run: python probe.py
+      - name: مقارنة القاعدتين
+        if: inputs.replay == true
+        run: python replay.py 30
