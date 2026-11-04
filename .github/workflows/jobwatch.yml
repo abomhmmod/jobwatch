@@ -1,0 +1,101 @@
+name: jobwatch
+
+on:
+  schedule:
+    - cron: '7 6,15 * * *'   # 9:07 و18:07 بتوقيت دمشق (UTC+3)
+  workflow_dispatch:
+    inputs:
+      test_notify:
+        description: 'أرسل رسالة اختبار فقط (دون فحص)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jobwatch
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TZ: Asia/Damascus
+      PYTHONUTF8: '1'
+      TEST_NOTIFY: ${{ inputs.test_notify == true }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: فحص رمز البوت
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "::error::السرّ TELEGRAM_TOKEN أو TELEGRAM_CHAT_ID غير موجود. توقّف التشغيل قبل الفحص."
+            exit 1
+          fi
+          resp=$(curl -sS --max-time 30 "https://api.telegram.org/bot${TELEGRAM_TOKEN}/getMe" || true)
+          if ! printf '%s' "$resp" | python3 -c 'import json,sys; j=json.load(sys.stdin); assert j.get("ok"); print("البوت:", j["result"]["username"])'; then
+            echo "::error::رفض تيلغرام رمز البوت. توقّف التشغيل قبل الفحص حتّى لا تضيع إعلانات."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: تثبيت المكتبات
+        run: |
+          pip install -q -r requirements.txt
+          echo "PW_VERSION=$(python -c 'import importlib.metadata as m; print(m.version("playwright"))')" >> "$GITHUB_ENV"
+
+      - name: ذاكرة متصفّح chromium
+        if: env.TEST_NOTIFY != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PW_VERSION }}
+
+      - name: تثبيت chromium (لا يُنزَّل إن كان في الذاكرة)
+        if: env.TEST_NOTIFY != 'true'
+        run: python -m playwright install --only-shell chromium
+
+      - name: كتابة config.json من الأسرار
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python - <<'PY'
+          import json, os
+          c = json.load(open('config.public.json', encoding='utf-8'))
+          c['bot_token'] = os.environ['TELEGRAM_TOKEN']
+          c['chat_id'] = int(os.environ['TELEGRAM_CHAT_ID'])
+          json.dump(c, open('config.json', 'w', encoding='utf-8'), ensure_ascii=False)
+          PY
+
+      - name: رسالة اختبار
+        if: env.TEST_NOTIFY == 'true'
+        run: python jobwatch.py --test
+
+      - name: الفحص
+        if: env.TEST_NOTIFY != 'true'
+        run: python jobwatch.py
+
+      - name: حذف config.json
+        if: always()
+        run: rm -f config.json
+
+      - name: حفظ state.json
+        if: always() && env.TEST_NOTIFY != 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add state.json
+          if git diff --cached --quiet; then echo 'لا تغيير في الحالة'; exit 0; fi
+          git commit -q -m "state: $(date '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          exit 1

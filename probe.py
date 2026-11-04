@@ -15,7 +15,7 @@ def probe(src):
         return url, r.status_code, f"{r.text.count('tgme_widget_message_text')} منشورًا"
     if t == 'rss':
         r = requests.get(src['url'], headers=UA, timeout=30)
-        return src['url'], r.status_code, f"{len(re.findall(r'<item\\b', r.text))} عنصرًا"
+        return src['url'], r.status_code, f"{len(re.findall('<item[ >]', r.text))} عنصرًا"
     if t == 'tawzeef':
         url = 'https://api.tawzeefportal.com/api/Seeker/Job/List'
         r = requests.get(url, params={'stateId': src.get('state_id', 14), 'page': 0, 'pageLength': 60},

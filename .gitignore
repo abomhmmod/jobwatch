@@ -1,0 +1,5 @@
+config.json
+jobwatch.log
+__pycache__/
+*.tmp
+fb_profile/

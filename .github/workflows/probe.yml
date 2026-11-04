@@ -13,4 +13,4 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install requests
-      - run: python probe.py && python probe_rss.py
+      - run: python probe.py

@@ -7,7 +7,7 @@ JobWatch — متتبّع الوظائف الحكومية في حماة، يرس
   python jobwatch.py --fb-login   نافذة فيسبوك لتسجيل الدخول مرّة واحدة
   python jobwatch.py --fb-find "اسم"   البحث عن روابط صفحات فيسبوك
 """
-import base64, email.utils, hashlib, html, io, json, logging, random, re, sys, time
+import base64, email.utils, hashlib, html, io, json, logging, os, random, re, sys, time
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -21,13 +21,24 @@ CFG_PATH, STATE_PATH = BASE / 'config.json', BASE / 'state.json'
 FB_PROFILE = BASE / 'fb_profile'
 UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                     '(KHTML, like Gecko) Chrome/130.0 Safari/537.36 Edg/130.0'}
-logging.basicConfig(filename=BASE / 'jobwatch.log', level=logging.INFO, encoding='utf-8',
-                    format='%(asctime)s %(levelname)s %(message)s')
+_handlers = [logging.FileHandler(BASE / 'jobwatch.log', encoding='utf-8')]
+if sys.stderr is not None:  # pythonw على ويندوز بلا stderr؛ وعلى الخادم يظهر السجلّ في سجلّات التشغيل
+    _handlers.append(logging.StreamHandler(sys.stderr))
+logging.basicConfig(level=logging.INFO, handlers=_handlers, format='%(asctime)s %(levelname)s %(message)s')
 log = logging.getLogger('jobwatch')
 try:
     sys.stdout.reconfigure(encoding='utf-8')
 except Exception:
     pass
+
+
+def browser_channel(cfg=None):
+    """قناة متصفّح playwright: من JOBWATCH_BROWSER_CHANNEL أو browser_channel في الإعدادات،
+    وإلّا msedge على ويندوز وchromium المرفق مع playwright على غيره."""
+    ch = os.environ.get('JOBWATCH_BROWSER_CHANNEL') or (cfg or {}).get('browser_channel')
+    if ch is None:
+        ch = 'msedge' if sys.platform == 'win32' else 'chromium'
+    return None if ch in ('', 'chromium', 'bundled') else ch
 
 # ------------------------------------------------------------------ تطبيع النصّ العربيّ
 DIGITS = str.maketrans('٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹', '01234567890123456789')
@@ -254,7 +265,7 @@ def collect_tawzeef(src, cutoff):
 def collect_webpage(src, cutoff):
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
-        b = p.chromium.launch(channel='msedge', headless=True)
+        b = p.chromium.launch(channel=browser_channel(src), headless=True)
         try:
             pg = b.new_page()
             pg.goto(src['url'], timeout=90000, wait_until='networkidle')
@@ -485,7 +496,7 @@ def fb_date(text):
 
 def fb_context(p, headless):
     return p.chromium.launch_persistent_context(
-        str(FB_PROFILE), channel='msedge', headless=headless, locale='ar',
+        str(FB_PROFILE), channel=browser_channel(), headless=headless, locale='ar',
         viewport=None if not headless else {'width': 1280, 'height': 2200},
         no_viewport=not headless)
 
@@ -678,6 +689,9 @@ if __name__ == '__main__':
     elif a[:1] == ['--test']:
         c = load_json(CFG_PATH, None)
         if c and ensure_chat_id(c):
-            print('ok' if tg_send(c, '✅ بوت الوظائف يعمل.') else 'failed')
+            ok = tg_send(c, '✅ بوت الوظائف يعمل.')
+            print('ok' if ok else 'failed')
+            sys.exit(0 if ok else 1)
+        sys.exit(1)
     else:
         run()

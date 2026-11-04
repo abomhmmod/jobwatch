@@ -274,7 +274,7 @@
     }
   ],
   "facebook": {
-    "enabled": true,
+    "enabled": false,
     "headless": true,
     "scrolls": 4,
     "pages": [],
