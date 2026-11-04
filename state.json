@@ -698,7 +698,39 @@
     "tg:SyMOfE/11203",
     "rss:https://sana.sy/locals/2625991/",
     "tg:SyMOHEASR/13825",
-    "tg:HamaEndowments/1919"
+    "tg:HamaEndowments/1919",
+    "tg:SyrMOYAS/4629",
+    "tg:SyMOEADM/9569",
+    "tg:SyrMOYAS/4624",
+    "tg:hamahelth/7938",
+    "fp:7c80d18dba43",
+    "rss:https://sana.sy/sport/2626199/",
+    "tg:SyrSMOT/11644",
+    "tg:SyrMOfA/6243",
+    "tg:SyrMOfF/10128",
+    "rss:https://sana.sy/economy/syrian-economy/2626234/",
+    "tg:SyMOLAAE/15512",
+    "tg:SyrMOfF/10127",
+    "tg:SyMOAD/9983",
+    "tg:SyrMOYAS/4630",
+    "tg:SyrSMOC/5093",
+    "tg:SySMOfT/1918",
+    "tg:SyrMOfH/17245",
+    "rss:https://sana.sy/governorates/daraa/2626269/",
+    "tg:MOPWAH/2053",
+    "tg:SyrMOfH/17246",
+    "tg:SyMOfE/11214",
+    "tg:SyrSMOT/11645",
+    "tg:SyrSMOT/11649",
+    "tg:SyMOAD/9975",
+    "tg:SyMOSAAL/9155",
+    "tg:SyrMOYAS/4631",
+    "tg:HamaEndowments/1929",
+    "tg:SyMOSAAL/9156",
+    "tg:SyMOSAAL/9151",
+    "tg:SyMOEADM/9570",
+    "tg:SyrSMOT/11640",
+    "rss:https://sana.sy/sport/2626033/"
   ],
   "codes": [],
   "fail": {
@@ -741,5 +773,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-04T18:02:58"
+  "last_run": "2026-11-05T00:16:36"
 }
