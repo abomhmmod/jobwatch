@@ -730,7 +730,35 @@
     "tg:SyMOSAAL/9151",
     "tg:SyMOEADM/9570",
     "tg:SyrSMOT/11640",
-    "rss:https://sana.sy/sport/2626033/"
+    "rss:https://sana.sy/sport/2626033/",
+    "rss:https://sana.sy/education/2623199/",
+    "rss:https://sana.sy/culture-and-arts/2626593/",
+    "rss:https://sana.sy/economy/2626630/",
+    "tg:SyMOAD/9984",
+    "rss:https://sana.sy/locals/2623777/",
+    "rss:https://sana.sy/international/2623355/",
+    "tg:SyrMOfH/17250",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131319#eeb7ba230e5e",
+    "tg:SyMOEADM/9575",
+    "rss:https://sana.sy/economy/2622872/",
+    "tg:SyMOHEASR/13829",
+    "rss:https://sana.sy/culture-and-arts/2623061/",
+    "rss:https://sana.sy/economy/syrian-economy/2623514/",
+    "tz:4847",
+    "rss:https://sana.sy/miscellaneous/2622972/",
+    "tg:HamaEndowments/1930",
+    "tg:SyrMOfF/10129",
+    "tg:SyMOfE/11215",
+    "rss:https://sana.sy/miscellaneous/2623852/",
+    "rss:https://sana.sy/reports/2622828/",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131319#09b4d2fd65c8",
+    "rss:https://sana.sy/economy/syrian-economy/2626292/",
+    "rss:https://sana.sy/economy/syrian-economy/2623293/",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131319#ea6575c7decc",
+    "rss:https://sana.sy/miscellaneous/2622870/",
+    "tg:SyMOIGov/71104",
+    "tg:SyrMOfA/6246",
+    "rss:https://sana.sy/culture-and-arts/2622312/"
   ],
   "codes": [],
   "fail": {
@@ -773,5 +801,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-05T00:22:28"
+  "last_run": "2026-11-05T12:00:57"
 }
