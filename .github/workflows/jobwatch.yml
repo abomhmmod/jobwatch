@@ -29,7 +29,7 @@ jobs:
       PYTHONUTF8: '1'
       # مواعيد الفحص اليوميّة بتوقيت دمشق. كلّ تشغيل «نبضة»، ولا تفحص النبضة إلّا إن مرّ أحد هذه
       # المواعيد منذ آخر فحص ناجح (due.py). فإن تأخّرت نبضة أو سقطت، فحصت التي بعدها.
-      SLOTS: '09:07 18:07'
+      SLOTS: '09:07 12:08 18:07'
       TEST_NOTIFY: ${{ inputs.test_notify == true }}
       # التشغيل اليدويّ (زرّ Run workflow) يفحص فورًا. أمّا نبضات الجدولة والإيقاظ الذاتيّ فتفحص حين يحلّ موعد.
       MANUAL: ${{ github.event_name == 'workflow_dispatch' && github.actor != 'github-actions[bot]' }}
