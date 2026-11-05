@@ -1,0 +1,90 @@
+name: wake-test
+# تجربة مؤقّتة لصمام الأمان في مهمّة wake: المؤقّت هنا دقيقة واحدة، وهي أقلّ من MIN_AGE،
+# فالمتوقّع أن ترفض المهمّة طلب تشغيل جديد وأن ترسل تنبيهًا إلى تيلغرام. يُحذف بعد التجربة.
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: echo "work done at $(date -u +%H:%M:%S)"
+  wake:
+    # الإيقاظ الذاتيّ: بعد انتهاء التجربة ينتظر GitHub مدّة مؤقّت البيئة wake-1 (1 دقيقة؛ تُضبط من
+    # Settings ← Environments)، ثمّ يطلب هذا التشغيلُ تشغيلًا جديدًا. والانتظار لا يشغل خادمًا.
+    # إن بدأ في الأثناء تشغيل أحدث (من الجدولة أو يدويًّا) فهو الذي يُكمل وهذا يتوقّف، فتبقى سلسلة واحدة.
+    # يعمل ولو فشل ما قبله، حتّى لا تنقطع السلسلة. وإيقاف البوت يكون بـ Disable workflow.
+    needs: work
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: wake-1
+      deployment: false
+    permissions:
+      actions: write
+    steps:
+      - name: Request the next run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ github.event.repository.default_branch || 'main' }}
+          TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # صمام أمان: لا يُطلب تشغيل جديد قبل مرور هذه الثواني على بدء هذا التشغيل. فلو لم يُطبَّق
+          # مؤقّت الانتظار (حُذفت البيئة أو أُلغي مؤقّتها، أو صار المستودع خاصًّا على الخطّة المجّانيّة)
+          # لتتابعت التشغيلات بلا توقّف.
+          MIN_AGE: 300
+        run: |
+          warn() {  # $1: سطر في سجلّ التشغيل، $2: تنبيه إلى تيلغرام
+            echo "::error::$1"
+            curl -sS -o /dev/null --max-time 30 "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TG_CHAT}" \
+              --data-urlencode "text=⚠️ ${GITHUB_REPOSITORY}: $2" || true
+          }
+          wf="${GITHUB_WORKFLOW_REF#*/.github/workflows/}"; wf="${wf%@*}"
+          api="repos/$GITHUB_REPOSITORY/actions/workflows/$wf"
+
+          started=""
+          for i in 1 2 3 4 5 6; do
+            started=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at 2>/dev/null) && [ -n "$started" ] && break
+            sleep 20
+          done
+          if [ -z "$started" ]; then
+            warn "Could not reach the GitHub API to read this run's start time." \
+                 "تعذّر الاتّصال بواجهة GitHub، فتوقّف الفحص الدوريّ. لإعادته افتح تبويب Actions في المستودع واضغط Run workflow."
+            exit 1
+          fi
+          age=$(( $(date +%s) - $(date -d "$started" +%s) ))
+          if [ "$age" -lt "$MIN_AGE" ]; then
+            warn "This run is only ${age}s old, so the wait timer was not applied. Not requesting another run." \
+                 "مؤقّت الانتظار لم يُطبَّق، فأوقفتُ الإيقاظ الذاتيّ حتّى لا تتتابع التشغيلات بلا توقّف. راجع المؤقّت في Settings ← Environments، وتأكّد أنّ المستودع عامّ، ثمّ اضغط Run workflow في تبويب Actions."
+            exit 1
+          fi
+
+          newest=""
+          for i in 1 2 3 4 5 6; do
+            newest=$(gh api "$api/runs?per_page=1" --jq '.workflow_runs[0] | "\(.id) \(.status)"' 2>/dev/null) && [ -n "$newest" ] && break
+            sleep 20
+          done
+          if [ -n "$newest" ] && [ "${newest%% *}" != "$GITHUB_RUN_ID" ] && [ "${newest#* }" != "completed" ]; then
+            echo "A newer run (${newest%% *}) is under way; it will request the next one."
+            exit 0
+          fi
+
+          err=""
+          for i in 1 2 3 4 5 6 7 8; do
+            if err=$(gh api -X POST "$api/dispatches" -f ref="$REF" 2>&1); then
+              echo "Next run requested."
+              exit 0
+            fi
+            echo "Attempt $i failed: $err"
+            case "$err" in
+              *"disabled workflow"*) echo "The workflow is disabled, so the chain stops here."; exit 0 ;;
+              *"HTTP 403"*|*"HTTP 404"*|*"HTTP 422"*) break ;;
+            esac
+            sleep 45
+          done
+          warn "Could not request the next run: $err" \
+               "تعذّر طلب التشغيل التالي، فتوقّف الفحص الدوريّ. لإعادته افتح تبويب Actions في المستودع واضغط Run workflow."
+          exit 1
