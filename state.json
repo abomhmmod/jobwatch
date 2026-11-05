@@ -759,7 +759,38 @@
     "tg:SyMOIGov/71104",
     "tg:SyrMOfA/6246",
     "rss:https://sana.sy/culture-and-arts/2622312/",
-    "tg:MOPWAH/2054"
+    "tg:MOPWAH/2054",
+    "rss:https://sana.sy/governorates/2626959/",
+    "tg:SyrMOfE/12597",
+    "tg:SyrMOfF/10130",
+    "tg:SyrMOfE/12602",
+    "tg:SyrSMOT/11661",
+    "tg:SyMOSAAL/9158",
+    "rss:https://sana.sy/culture-and-arts/2626830/",
+    "tg:SySMOfT/1924",
+    "tg:SyMOHEASR/13839",
+    "rss:https://sana.sy/culture-and-arts/2626779/",
+    "tg:SyrMOfE/12603",
+    "rss:https://sana.sy/politics/2626934/",
+    "tg:SyrMOfE/12613",
+    "tg:SyrMOfF/10132",
+    "tg:SyMOEADM/9576",
+    "rss:https://sana.sy/miscellaneous/2626690/",
+    "tg:SyrSMOT/11657",
+    "rss:https://sana.sy/culture-and-arts/2626691/",
+    "tg:SyrSMOC/5094",
+    "tg:SyrSMOT/11650",
+    "tg:SySMOfT/1922",
+    "tg:SyMOfE/11216",
+    "tg:Syrian_jobb/27860",
+    "tg:SyrMOfE/12608",
+    "tg:SyrMOfE/12592",
+    "rss:https://sana.sy/locals/2626880/",
+    "tg:SyrMOfE/12614",
+    "tg:HamaGov1/25082",
+    "tg:SyMOHEASR/13830",
+    "tg:SyMOEADM/9586",
+    "tg:SySMOfT/1928"
   ],
   "codes": [],
   "fail": {
@@ -802,5 +833,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-05T12:11:09"
+  "last_run": "2026-11-05T18:16:40"
 }
