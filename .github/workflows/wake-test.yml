@@ -38,9 +38,10 @@ jobs:
         run: |
           warn() {  # $1: سطر في سجلّ التشغيل، $2: تنبيه إلى تيلغرام
             echo "::error::$1"
-            curl -sS -o /dev/null --max-time 30 "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
               --data-urlencode "chat_id=${TG_CHAT}" \
-              --data-urlencode "text=⚠️ ${GITHUB_REPOSITORY}: $2" || true
+              --data-urlencode "text=⚠️ ${GITHUB_REPOSITORY}: $2") || true
+            echo "Telegram warning: HTTP ${code:-none}"
           }
           wf="${GITHUB_WORKFLOW_REF#*/.github/workflows/}"; wf="${wf%@*}"
           api="repos/$GITHUB_REPOSITORY/actions/workflows/$wf"
