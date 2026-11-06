@@ -790,9 +790,44 @@
     "tg:HamaGov1/25082",
     "tg:SyMOHEASR/13830",
     "tg:SyMOEADM/9586",
-    "tg:SySMOfT/1928"
+    "tg:SySMOfT/1928",
+    "tg:SyMOLAAE/15515",
+    "tg:HamaEndowments/1932",
+    "tg:SyrMOfF/10137",
+    "tg:SyMOEADM/9594",
+    "tg:SyrMOfE/12615",
+    "tg:SyMOHEASR/13847",
+    "rss:https://sana.sy/international/2627043/",
+    "rss:https://sana.sy/locals/2627158/",
+    "tg:SyrMOfF/10133",
+    "tg:SyrMOfA/6255",
+    "tg:SyMOAD/9985",
+    "tg:SyrMOfj/3599",
+    "tg:SyrMOfH/17251",
+    "tg:SyrMOfA/6251",
+    "fp:beb3d08da0fb",
+    "rss:https://sana.sy/locals/2627436/",
+    "tg:SyMOHEASR/13852",
+    "tg:HamaEndowments/1931",
+    "rss:https://sana.sy/locals/2627317/",
+    "tg:SyrMOfE/12616",
+    "tg:SyMOfE/11229",
+    "rss:https://sana.sy/locals/2627449/",
+    "tg:SyrSMOC/5095",
+    "tg:SyMOEADM/9597",
+    "tg:SyrMOfA/6256",
+    "tg:SyMOfE/11217",
+    "rss:https://sana.sy/economy/2627508/",
+    "tg:SyMOHEASR/13841",
+    "tg:SyrSMOC/5096",
+    "tg:SyrMOfE/12626",
+    "tg:SyMOHEASR/13857",
+    "tg:SyMOfE/11222",
+    "tg:SyMOAD/9986"
   ],
-  "codes": [],
+  "codes": [
+    "hiring20261030"
+  ],
   "fail": {
     "وزارة التنمية الإدارية|SyMOAD": 0,
     "بوابة التوظيف (tawzeefportal) — حماة|": 0,
@@ -833,5 +868,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-05T18:16:40"
+  "last_run": "2026-11-06T09:31:34"
 }
