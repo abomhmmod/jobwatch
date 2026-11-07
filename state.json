@@ -845,7 +845,22 @@
     "tg:HamaEndowments/1943",
     "tg:HamaGov1/25090",
     "tg:SyrMOfj/3617",
-    "tz:5011"
+    "tz:5011",
+    "tg:SyrMOfj/3640",
+    "tg:SyMOEADM/9605",
+    "tg:SyrMOfH/17253",
+    "rss:https://sana.sy/economy/syrian-economy/2627877/",
+    "tg:SyrMOYAS/4636",
+    "rss:https://sana.sy/infographic/2628175/",
+    "tg:SyMOfE/11232",
+    "tg:SyMOAD/9993",
+    "tg:SyrMOYAS/4633",
+    "tg:SyrSMOC/5122",
+    "tg:SyMOfE/11233",
+    "tg:HamaEndowments/1944",
+    "tg:SyrSMOC/5129",
+    "tg:hamahelth/7939",
+    "tg:SyrSMOC/5114"
   ],
   "codes": [
     "hiring20261030"
@@ -890,5 +905,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-06T18:36:57"
+  "last_run": "2026-11-07T09:53:12"
 }
