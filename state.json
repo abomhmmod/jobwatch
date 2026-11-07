@@ -860,9 +860,43 @@
     "tg:HamaEndowments/1944",
     "tg:SyrSMOC/5129",
     "tg:hamahelth/7939",
-    "tg:SyrSMOC/5114"
+    "tg:SyrSMOC/5114",
+    "tz:5117",
+    "tg:SyMOSAAL/9159",
+    "tg:SyMOfE/11241",
+    "tg:HamaEndowments/1953",
+    "fp:57c17f5daa43",
+    "tg:HamaGov1/25099",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131429",
+    "rss:https://sana.sy/miscellaneous/2628509/",
+    "tg:SyrMOfj/3652",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131416",
+    "tg:SyrMOfj/3647",
+    "tg:HamaEndowments/1952",
+    "tg:SyrMOfE/12637",
+    "tg:SyrMOfj/3653",
+    "tg:SyrMOfE/12632",
+    "tz:5119",
+    "rss:https://sana.sy/international/2628277/",
+    "tg:SyMOLAAE/15517",
+    "tg:SyrMOfj/3648",
+    "tg:SyrMOfH/17258",
+    "tz:5107",
+    "tg:SyrMOfj/3645",
+    "tg:SyMOAD/9994",
+    "rss:https://sana.sy/culture-and-arts/2628290/",
+    "rss:https://sana.sy/education/2628349/",
+    "rss:https://sana.sy/syria-and-the-world/2628447/",
+    "rss:https://sana.sy/locals/2628522/",
+    "tg:hamahelth/7948",
+    "tz:5125",
+    "tg:SyrMOfj/3646",
+    "rss:https://sana.sy/miscellaneous/2628428/",
+    "rss:https://sana.sy/sport/syrian-sport/2628458/",
+    "tg:SyrSMOT/11662"
   ],
   "codes": [
+    "hiring20261104",
     "hiring20261030"
   ],
   "fail": {
@@ -905,5 +939,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-07T09:53:12"
+  "last_run": "2026-11-07T18:56:21"
 }
