@@ -910,11 +910,26 @@
     "tg:SyrMOYAS/4637",
     "tg:Syrian_jobb/27906",
     "tg:SyrMOfA/6262",
-    "tg:SySMOfT/1930"
+    "tg:SySMOfT/1930",
+    "tg:SySMOfT/1931",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#2559dbbfb586",
+    "tg:SyrMOfE/12642",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#942c6fc47214",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#0937db286cd0",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#02bed3df0a26",
+    "tg:SyrMOfE/12638",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#22397819f436",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#64576935143d",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#3e6fb6a4efff",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#5fc787cd3fb6",
+    "tg:HamaEndowments/1954",
+    "tg:HamaGov1/25113",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#a36546e4cf6d",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#e7f599ee722d"
   ],
   "codes": [
-    "hiring20261104",
-    "hiring20261030"
+    "hiring20261030",
+    "hiring20261104"
   ],
   "fail": {
     "وزارة التنمية الإدارية|SyMOAD": 0,
@@ -956,5 +971,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-08T09:32:31"
+  "last_run": "2026-11-08T12:36:02"
 }
