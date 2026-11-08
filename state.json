@@ -925,7 +925,25 @@
     "tg:HamaEndowments/1954",
     "tg:HamaGov1/25113",
     "rss:https://fedaa.alwehda.gov.sy/?p=131471#a36546e4cf6d",
-    "rss:https://fedaa.alwehda.gov.sy/?p=131471#e7f599ee722d"
+    "rss:https://fedaa.alwehda.gov.sy/?p=131471#e7f599ee722d",
+    "tg:SyMOHEASR/13872",
+    "tg:SyMOHEASR/13879",
+    "rss:https://sana.sy/miscellaneous/2629153/",
+    "tg:SyrMOfH/17261",
+    "tg:syrianmoi/31806",
+    "tg:SyrMOfH/17259",
+    "tg:HamaEndowments/1955",
+    "tg:SyMOHEASR/13874",
+    "tg:SyMOHEASR/13876",
+    "tg:SyMOHEASR/13875",
+    "tg:SyMOHEASR/13863",
+    "tg:SyMOHEASR/13878",
+    "tg:SyMOHEASR/13877",
+    "tg:SyMOEADM/9607",
+    "tg:SyMOEADM/9606",
+    "rss:https://sana.sy/culture-and-arts/2629146/",
+    "tg:hamahelth/7950",
+    "tg:SyMOHEASR/13880"
   ],
   "codes": [
     "hiring20261030",
@@ -971,5 +989,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-08T12:36:02"
+  "last_run": "2026-11-08T15:13:38"
 }
