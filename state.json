@@ -893,7 +893,24 @@
     "tg:SyrMOfj/3646",
     "rss:https://sana.sy/miscellaneous/2628428/",
     "rss:https://sana.sy/sport/syrian-sport/2628458/",
-    "tg:SyrSMOT/11662"
+    "tg:SyrSMOT/11662",
+    "tg:SyrMOYAS/4642",
+    "tg:SyrSMOT/11663",
+    "rss:https://sana.sy/governorates/damascus/2628738/",
+    "tg:HamaGov1/25104",
+    "rss:https://sana.sy/sport/2628821/",
+    "tg:SyrMOfA/6263",
+    "rss:https://sana.sy/infographic/2628925/",
+    "tg:SyMOHEASR/13858",
+    "rss:https://sana.sy/culture-and-arts/2628806/",
+    "rss:https://sana.sy/sport/2628851/",
+    "rss:https://sana.sy/economy/syrian-economy/2628722/",
+    "tg:SyrMOfj/3662",
+    "tg:SyrMOfj/3663",
+    "tg:SyrMOYAS/4637",
+    "tg:Syrian_jobb/27906",
+    "tg:SyrMOfA/6262",
+    "tg:SySMOfT/1930"
   ],
   "codes": [
     "hiring20261104",
@@ -939,5 +956,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-07T18:56:21"
+  "last_run": "2026-11-08T09:32:31"
 }
