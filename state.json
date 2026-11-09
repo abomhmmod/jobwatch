@@ -959,7 +959,33 @@
     "tg:SyrMOfA/6268",
     "rss:https://sana.sy/culture-and-arts/2629404/",
     "tg:SyrSMOT/11669",
-    "tg:SyrMOfE/12643"
+    "tg:SyrMOfE/12643",
+    "tg:hamahelth/7951",
+    "tg:SyMOHEASR/13887",
+    "fp:865f0747953b",
+    "tg:SyMOfE/11243",
+    "tg:SyMOfE/11242",
+    "tg:SyMOHEASR/13884",
+    "tg:SyrSMOC/5135",
+    "rss:https://sana.sy/locals/2630037/",
+    "tg:SyrMOfE/12648",
+    "tg:SyrMOfj/3680",
+    "tg:SyMOHEASR/13891",
+    "tg:SyrMOfH/17264",
+    "tg:SyrMOfH/17262",
+    "tg:SyrSMOC/5145",
+    "tg:SyMOHEASR/13885",
+    "tg:SyMOHEASR/13882",
+    "tg:SyMOSAAL/9160",
+    "tg:SyMOLAAE/15525",
+    "tg:SyrMOYAS/4646",
+    "tg:altarbia_hama/2102",
+    "tg:SyrMOfH/17265",
+    "tg:hamahelth/7952",
+    "tg:SyrSMOT/11674",
+    "tg:SyrSMOC/5146",
+    "tg:SyMOHEASR/13886",
+    "tg:SyMOEADM/9617"
   ],
   "codes": [
     "hiring20261030",
@@ -1005,5 +1031,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-08T18:17:09"
+  "last_run": "2026-11-09T09:10:49"
 }
