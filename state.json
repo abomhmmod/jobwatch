@@ -1008,12 +1008,41 @@
     "tg:SyrMOfF/10146",
     "tg:SyrMOfH/17267",
     "rss:https://sana.sy/miscellaneous/2630206/",
-    "tg:HamaEndowments/1957"
+    "tg:HamaEndowments/1957",
+    "tg:SyMOfE/11249",
+    "tg:SyrMOfF/10160",
+    "tg:SyrMOfj/3681",
+    "tg:HamaEndowments/1958",
+    "tg:HamaEndowments/1966",
+    "tg:SyrMOfH/17269",
+    "tg:Syrian_jobb/27931",
+    "rss:https://sana.sy/locals/2630242/",
+    "tg:SyrMOfE/12660",
+    "tg:hamahelth/7954",
+    "tg:SyrMOfH/17273",
+    "tg:SyrMOfE/12654",
+    "tg:SyMOfE/11255",
+    "tz:5257",
+    "tg:SyrMOfF/10157",
+    "tg:SyrMOfF/10154",
+    "tz:5259",
+    "tg:SyrMOfF/10147",
+    "tg:SyrMOfA/6273",
+    "tg:SyrSMOT/11700",
+    "tg:SyrSMOT/11694",
+    "rss:https://sana.sy/economy/syrian-economy/2630339/",
+    "tg:SyrMOfF/10153",
+    "tg:SyrMOfF/10150",
+    "tg:SyrMOfA/6277",
+    "tg:SyrMOfE/12655",
+    "tg:SyrSMOT/11693",
+    "tg:SyrSMOT/11689",
+    "tg:SyrMOfF/10158"
   ],
   "codes": [
     "hiring20261104",
-    "hiring20261030",
-    "hiring20261105"
+    "hiring20261105",
+    "hiring20261030"
   ],
   "fail": {
     "وزارة التنمية الإدارية|SyMOAD": 0,
@@ -1055,5 +1084,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-09T12:14:15"
+  "last_run": "2026-11-09T16:18:10"
 }
