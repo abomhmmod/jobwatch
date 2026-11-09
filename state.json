@@ -985,11 +985,35 @@
     "tg:SyrSMOT/11674",
     "tg:SyrSMOC/5146",
     "tg:SyMOHEASR/13886",
-    "tg:SyMOEADM/9617"
+    "tg:SyMOEADM/9617",
+    "tg:SyrMOfE/12653",
+    "tg:MOPWAH/2062",
+    "tg:SyMOLAAE/15526",
+    "tg:syrianmoi/31812",
+    "tg:SyrMOfA/6270",
+    "tg:HamaGov1/25115",
+    "tg:SyrMOfF/10143",
+    "fp:3983b72739d9",
+    "tg:SyMOAD/9995",
+    "rss:https://sana.sy/infographic/2630162/",
+    "tg:SyrSMOT/11676",
+    "tg:SyrMOfE/12649",
+    "rss:https://sana.sy/miscellaneous/2630185/",
+    "tg:SyrMOfF/10142",
+    "tg:SyrSMOT/11675",
+    "rss:https://fedaa.alwehda.gov.sy/?p=131519",
+    "tg:SyMOEADM/9633",
+    "tg:SyrMOfF/10138",
+    "rss:https://sana.sy/miscellaneous/2630201/",
+    "tg:SyrMOfF/10146",
+    "tg:SyrMOfH/17267",
+    "rss:https://sana.sy/miscellaneous/2630206/",
+    "tg:HamaEndowments/1957"
   ],
   "codes": [
+    "hiring20261104",
     "hiring20261030",
-    "hiring20261104"
+    "hiring20261105"
   ],
   "fail": {
     "وزارة التنمية الإدارية|SyMOAD": 0,
@@ -1031,5 +1055,5 @@
     "صحيفة الفداء|https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2": 0
   },
   "first_done": true,
-  "last_run": "2026-11-09T09:10:49"
+  "last_run": "2026-11-09T12:14:15"
 }
