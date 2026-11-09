@@ -264,13 +264,15 @@
       "name": "صحيفة الفداء",
       "type": "rss",
       "url": "https://fedaa.alwehda.gov.sy/?s=شواغر&feed=rss2",
-      "assume_hama": true
+      "assume_hama": true,
+      "split_ads": true
     },
     {
       "name": "صحيفة الفداء",
       "type": "rss",
       "url": "https://fedaa.alwehda.gov.sy/?s=مسابقة&feed=rss2",
-      "assume_hama": true
+      "assume_hama": true,
+      "split_ads": true
     }
   ],
   "facebook": {

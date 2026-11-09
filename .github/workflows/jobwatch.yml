@@ -41,11 +41,20 @@ jobs:
 
       - name: هل حان موعد فحص؟
         id: plan
+        # due.py: الرمز 0 افحص، و3 لا تفحص. وأيّ رمز غيرهما خطأ (سطر SLOTS لا يُفهم مثلًا)،
+        # فيفحص احتياطًا بدل أن يتوقّف الفحص بصمت، وينبّه الفحصُ تيلغرام (DUE_ERROR).
         run: |
           if [ "$TEST_NOTIFY" = true ]; then mode=test
           elif [ "$MANUAL" = true ]; then mode=scan; echo 'تشغيل يدويّ: فحص فوريّ.'
-          elif python3 due.py $SLOTS; then mode=scan
-          else mode=idle
+          else
+            rc=0; python3 due.py $SLOTS || rc=$?
+            case "$rc" in
+              0) mode=scan ;;
+              3) mode=idle ;;
+              *) mode=scan
+                 echo "::error::تعذّر على due.py الحكم على الموعد (الرمز $rc)، فالفحص يجري احتياطًا. راجع السطر SLOTS."
+                 echo 'DUE_ERROR=1' >> "$GITHUB_ENV" ;;
+            esac
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
@@ -113,6 +122,39 @@ jobs:
       - name: حذف config.json
         if: always()
         run: rm -f config.json
+
+      # إن فشل الفحص (أو ما قبله) نُبّه تيلغرام مرّةً واحدة، وتُعيد النبضات التالية المحاولة كلّ ساعة
+      # (last_run لم يتغيّر). والعلامة scan_failing في state.json تمنع تكرار التنبيه، وأوّل فحص ناجح
+      # بعدها يرسل «عاد فحص الوظائف يعمل» ويمحوها.
+      - name: تنبيه عند فشل الفحص
+        if: failure() && steps.plan.outputs.mode == 'scan'
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.parse, urllib.request
+          try:
+              s = json.load(open('state.json', encoding='utf-8'))
+          except Exception:
+              s = {}
+          if s.get('scan_failing'):
+              print('سبق التنبيه بهذا التعطّل.')
+              raise SystemExit
+          text = ('⚠️ ' + os.environ['GITHUB_REPOSITORY'] + ': تعذّر فحص الوظائف في هذا التشغيل. '
+                  'ستعيد النبضات التالية المحاولة كلّ ساعة، وسأخبرك حين يعود. التفاصيل في تبويب Actions.')
+          data = urllib.parse.urlencode({'chat_id': os.environ['TELEGRAM_CHAT_ID'], 'text': text}).encode()
+          try:
+              urllib.request.urlopen('https://api.telegram.org/bot' + os.environ['TELEGRAM_TOKEN'] + '/sendMessage',
+                                     data, timeout=30)
+          except Exception as e:
+              print('تعذّر التنبيه:', type(e).__name__)
+              raise SystemExit
+          s['scan_failing'] = True
+          with open('state.json', 'w', encoding='utf-8') as f:
+              json.dump(s, f, ensure_ascii=False, indent=2)
+          print('أُرسل التنبيه.')
+          PY
 
       - name: حفظ state.json
         if: always() && steps.plan.outputs.mode == 'scan'

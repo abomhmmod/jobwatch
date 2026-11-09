@@ -59,7 +59,9 @@ def R(p):
 
 
 HAMA = R(r'(حماة|حماه)(?! (الوطن|الديار|الأقصى|الحق|المستقبل|الثورة|الحمى))|سلمية|مصياف|السقيلبية|محردة|صوران|طيبة الإمام|كفرزيتا|اللطامنة')
-LOW = R(r'عامل نظافة|عمال نظافة|عامل خدمات|سائق|سائقين|حارس|حراس|مستخدم|مستخدمين|عتالة|الفئة الرابعة|الفئة الخامسة')
+# «مستخدم/مستخدمين» وظيفةً، لا «اسم المستخدم» ولا «الطريقة المستخدمة» في تعليمات التقديم.
+LOW = R(r'عامل نظافة|عمال نظافة|عامل خدمات|سائق|سائقين|حارس|حراس|(?<!اسم )(?<!اسم ال)مستخدم(ين)?(?!\w)'
+        r'|عتالة|الفئة الرابعة|الفئة الخامسة')
 UNI = R(r'إجازة جامعية|إجازة في|جامعي|الفئة الأولى|ماجستير|دكتوراه|دبلوم دراسات عليا|مدرس|معلم')
 ALL_GOV = R(r'(جميع|كافة|كل) ال?محافظات|المحافظات (كافة|السورية|جميعها)|جميع أنحاء')
 OTHER_GOV = R(r'دمشق|حمص|حلب|إدلب|اللاذقية|طرطوس|القنيطرة|درعا|السويداء|دير الزور|الحسكة|الرقة')
@@ -82,10 +84,14 @@ QUAL = [norm(x).replace(' ', '') for x in (
     'إعلام', 'ترجمة', 'لسانيات', 'تدقيق لغوي')]
 TITLE_CUT = re.compile(r'\s(?:دمشق|ريف|حمص|حما[ةه]|حلب|[إا]دلب|اللاذقي[ةه]|طرطوس|القنيطر[ةه]|درعا'
                        r'|السويداء|دير الزور|الحسك[ةه]|الرق[ةه]|جميع|كاف[ةه]|الفئ[ةه])')
-SCOPE_AR = {'hama': 'حماة', 'all': 'جميع المحافظات (ومنها حماة)', 'unknown': 'لم تُذكر المحافظة في النصّ'}
+SCOPE_AR = {'hama': 'حماة', 'all': 'جميع المحافظات (ومنها حماة)', 'unknown': 'لم تُذكر المحافظة في النصّ',
+            'pdf': 'حماة في ملفّ الشواغر (والنصّ يذكر محافظات أخرى)'}
+# «دمشق في 9/11/2026» في رأس الكتب الرسميّة مكانُ صدورها، لا مكانُ العمل.
+DATELINE = R(r'دمشق ?(في)? ?:? ?\d{1,4} ?[/\-.]')
 
 
 def scope(t):
+    t = DATELINE.sub(' ', t)
     if HAMA.search(t):
         return 'hama'
     if ALL_GOV.search(t):
@@ -123,7 +129,7 @@ MONTHS = {norm(k): v for k, v in {
     'آب': 8, 'أغسطس': 8, 'أيلول': 9, 'سبتمبر': 9, 'تشرين الأول': 10, 'أكتوبر': 10,
     'تشرين الثاني': 11, 'نوفمبر': 11, 'كانون الأول': 12, 'ديسمبر': 12}.items()}
 MONTH_RE = '|'.join(sorted(map(re.escape, MONTHS), key=len, reverse=True))
-DL_ANCHOR = R(r'آخر موعد|لغاية|حتى تاريخ|ينتهي التقديم|موعد أقصاه|حتى نهاية دوام')
+DL_ANCHOR = R(r'آخر موعد|لغاية|حتى تاريخ|ينتهي التقديم|موعد أقصاه|حتى نهاية دوام|تمديد')
 
 
 def mkdate(y, m, d):
@@ -133,19 +139,31 @@ def mkdate(y, m, d):
         return None
 
 
-def deadline(t):
-    for m in DL_ANCHOR.finditer(t):
-        s = t[m.end(): m.end() + 90]
-        d = re.search(r'(\d{1,2})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{4})', s)
-        if d:
-            return mkdate(int(d[3]), int(d[2]), int(d[1]))
-        d = re.search(r'(\d{4})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{1,2})', s)
-        if d:
-            return mkdate(int(d[1]), int(d[2]), int(d[3]))
-        d = re.search(rf'(\d{{1,2}})\s+({MONTH_RE})\s+(\d{{4}})', s)
-        if d:
-            return mkdate(int(d[3]), MONTHS[d[2]], int(d[1]))
+def anchored_date(s):
+    """أوّل تاريخ في المقطع الذي يلي عبارة الموعد."""
+    d = re.search(r'(\d{1,2})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{4})', s)
+    if d:
+        return mkdate(int(d[3]), int(d[2]), int(d[1]))
+    d = re.search(r'(\d{4})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{1,2})', s)
+    if d:
+        return mkdate(int(d[1]), int(d[2]), int(d[3]))
+    d = re.search(rf'(\d{{1,2}})\s+({MONTH_RE})\s+(\d{{4}})', s)
+    if d:
+        return mkdate(int(d[3]), MONTHS[d[2]], int(d[1]))
     return None
+
+
+def deadline(t):
+    """أحدث التواريخ التي تلي عبارات الموعد: إعلان التمديد يذكر الموعد القديم ثمّ الجديد."""
+    dates = [anchored_date(t[m.end(): m.end() + 90]) for m in DL_ANCHOR.finditer(t)]
+    return max((d for d in dates if d), default=None)
+
+
+def expired(dl, dt):
+    """انتهى باب التقديم: مضى موعده، أو لا موعد معروفًا له ونُشر قبل أكثر من 14 يومًا."""
+    if dl:
+        return dl < date.today()
+    return bool(dt and dt < datetime.now(timezone.utc) - timedelta(days=14))
 
 
 # ------------------------------------------------------------------ المصادر: تيلغرام
@@ -165,7 +183,8 @@ def tg_page(channel, q=None, before=None):
     return out
 
 
-def collect_tg(src, cutoff):
+# كلّ دالّة جمع تأخذ: المصدر، وأقدم تاريخ يُجمع، وseen (ما عولج من قبل، فتستطيع أن تتخطّى العمل عليه).
+def collect_tg(src, cutoff, seen=frozenset()):
     items, before = [], None
     for _ in range(src.get('max_pages', 6)):
         page = tg_page(src['channel'], src.get('query'), before)
@@ -190,7 +209,7 @@ def _rss_tag(block, name):
     return re.sub(r'^<!\[CDATA\[|\]\]>$', '', v).strip()
 
 
-def collect_rss(src, cutoff):
+def collect_rss(src, cutoff, seen=frozenset()):
     r = requests.get(src['url'], headers=UA, timeout=40)
     r.raise_for_status()
     out = []
@@ -203,7 +222,8 @@ def collect_rss(src, cutoff):
         soup = BeautifulSoup(_rss_tag(blk, 'content:encoded') or html.unescape(_rss_tag(blk, 'description')), 'html.parser')
         text = soup.get_text('\n')
         links = [a.get('href', '') for a in soup.select('a[href]')] + re.findall(r'https?://\S+', text)
-        if src.get('split_ads') and 'اعلانات' in norm(title):
+        # صفحة الإعلانات تُقسم إعلانًا إعلانًا، إلّا صفحةً عولجت كاملةً من قبل (فلا تتكرّر إعلاناتها).
+        if src.get('split_ads') and 'اعلانات' in norm(title) and 'rss:' + link not in seen:
             blocks, cur = [], []
             for p in soup.find_all('p'):
                 pt = p.get_text(' ', strip=True)
@@ -225,7 +245,15 @@ def collect_rss(src, cutoff):
 
 
 def sha(t):
+    """معرّف قطعة من صفحة إعلانات (من أوّل النصّ؛ لا يُغيَّر حتّى لا تتغيّر معرّفات ما حُفظ)."""
     return hashlib.sha1(norm(t)[:400].encode('utf-8')).hexdigest()[:12]
+
+
+def fingerprint(t):
+    """بصمة النصّ كلّه بلا روابط ولا وسوم ولا رموز: نسخ الإعلان نفسه في المصادر تتطابق،
+    والإعلانان اللذان يبدآن بالديباجة نفسها ويختلفان بعدها لا يتطابقان."""
+    body = re.sub(r'https?://\S+|#\S+', ' ', norm(t))
+    return hashlib.sha1(re.sub(r'[\W_]+', '', body).encode('utf-8')).hexdigest()[:12]
 
 
 # ------------------------------------------------------------------ المصادر: بوابة التوظيف (tawzeefportal)
@@ -235,7 +263,7 @@ GOV_CO = R(r'وزارة|الهيئات والمؤسسات العامة|حكوم|
 GOV_IND = {'الخدمات الحكومية', 'الإدارة المحلية والمجالس البلدية'}
 
 
-def collect_tawzeef(src, cutoff):
+def collect_tawzeef(src, cutoff, seen=frozenset()):
     j = requests.get(TZ_API + 'List', params={'stateId': src.get('state_id', 14), 'page': 0,
                                               'pageLength': 60}, headers=TZ_H, timeout=40).json()
     out = []
@@ -246,6 +274,10 @@ def collect_tawzeef(src, cutoff):
             continue
         exp = (it.get('expiresAt') or '')[:10]
         if exp and date.fromisoformat(exp) < date.today():
+            continue
+        if f"tz:{it['id']}" in seen:
+            # عولج من قبل: يكفي معرّفه (ليُعرف أنّه ما زال منشورًا) بلا طلب تفاصيله
+            out.append({'id': f"tz:{it['id']}", 'text': '', 'url': '', 'date': None, 'links': []})
             continue
         try:
             d = requests.get(TZ_API + 'Details', params={'id': it['id']}, headers=TZ_H, timeout=40).json()['result']
@@ -266,7 +298,7 @@ def collect_tawzeef(src, cutoff):
 
 
 # ------------------------------------------------------------------ المصادر: صفحة تُراقَب حتى تظهر فيها وظائف
-def collect_webpage(src, cutoff):
+def collect_webpage(src, cutoff, seen=frozenset()):
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         b = p.chromium.launch(channel=browser_channel(src), headless=True)
@@ -277,10 +309,11 @@ def collect_webpage(src, cutoff):
             text = pg.inner_text('main') if pg.locator('main').count() else pg.inner_text('body')
         finally:
             b.close()
-    if src['empty_marker'] in text:
+    if norm(src['empty_marker']) in norm(text):
         return []
     body = text.split(src.get('start_after', ''), 1)[-1] if src.get('start_after') else text
-    return [{'id': 'page:' + sha(body), 'text': f"🆕 تغيّرت صفحة «{src['name']}» وظهر فيها محتوى جديد:\n{body}",
+    # بصمة الصفحة كلّها لا أوّلها: وظيفة تُضاف في آخر القائمة تغيّرها أيضًا
+    return [{'id': 'page:' + fingerprint(body), 'text': f"🆕 تغيّرت صفحة «{src['name']}» وظهر فيها محتوى جديد:\n{body}",
              'url': src['url'], 'date': datetime.now(timezone.utc), 'links': [],
              'direct': {'scope': 'hama', 'deadline': None, 'hint': None, 'kind': 'افتح الصفحة'}}]
 
@@ -306,7 +339,9 @@ def fetch_pdf_text(url):
         from pypdf import PdfReader
     except ImportError:
         from PyPDF2 import PdfReader
-    return '\n'.join((pg.extract_text() or '') for pg in PdfReader(io.BytesIO(data)).pages)
+    text = '\n'.join((pg.extract_text() or '') for pg in PdfReader(io.BytesIO(data)).pages)
+    # الملفّ الممسوح ضوئيًّا (صور) يعطي صفحات فارغة: يُعدّ غير مقروء، لا ملفًّا بلا وظائف في حماة
+    return text if len(re.findall(r'[^\W\d_]', text)) >= 40 else None
 
 
 def analyse_pdf(text):
@@ -319,6 +354,10 @@ def analyse_pdf(text):
                 cards.append(cur)
             cur = []
         elif 'المهام' in n and 'الرييسيه' in n:
+            # ما قبل «المهام الرئيسية» في السطر نفسه آخرُ بيانات البطاقة (وقد يكون فيه الاختصاص)
+            head = line[:line.find('المهام')] if 'المهام' in line else ''
+            if cur is not None and head.strip():
+                cur.append(head)
             if cur:
                 cards.append(cur)
             cur = None
@@ -343,7 +382,13 @@ def analyse_pdf(text):
 
 
 # ------------------------------------------------------------------ الحكم على الإعلان
-def evaluate(it, src, state):
+PDF_LINK = re.compile(r'bit\.ly/hiring|drive\.google\.com/file')
+MAX_NAMED = 10  # أكثر عناوين الوظائف المناسبة التي تُكتب في الرسالة
+
+
+def evaluate(it, src, state, pending=frozenset()):
+    """يحكم على المنشور دون أن يغيّر الحالة. ما يُسجَّل بعد وصول الرسالة يعود في النتيجة
+    (marks: البصمة، codes: رموز ملفّات الشواغر). pending: ما قُبل في هذا الفحص ولم يُرسل بعد."""
     t = norm(it['text'])
     if not is_job(t):
         return None
@@ -351,24 +396,22 @@ def evaluate(it, src, state):
         return None
     if it.get('strict_gov') and not STRONG_GOV.search(t):
         return None
+    links = it.get('links', [])
+    pdf = next((l for l in links if PDF_LINK.search(l)), None)
     sc = scope(t)
-    if sc == 'other':
-        return None
+    if sc == 'other' and not pdf:
+        return None  # محافظة أخرى، ولا ملفّ شواغر قد تكون فيه حماة
     if sc == 'unknown' and src.get('assume_hama'):
         sc = 'hama'
     dl = deadline(t)
-    if dl and dl < date.today():
+    if expired(dl, it.get('date')):
         return None
-    if not dl and it.get('date') and it['date'] < datetime.now(timezone.utc) - timedelta(days=14):
-        return None  # بلا موعد معروف وقديم: غالبًا انتهى
-    fp = 'fp:' + (it.get('key') or sha(it['text']))
-    links = it.get('links', [])
+    fp = 'fp:' + (it.get('key') or fingerprint(it['text']))
     codes = set(re.findall(r'(?:hiring|applying)\d{6,}', it['text'] + ' ' + ' '.join(links)))
     hiring = {c for c in codes if c.startswith('hiring')}
-    if fp in state['seen_set'] or hiring & state['codes_set']:
+    if fp in state['seen_set'] or fp in pending or hiring & (state['codes_set'] | pending):
         return None
     hint, ktext = None, t
-    pdf = next((l for l in links if re.search(r'bit\.ly/hiring|drive\.google\.com/file', l)), None)
     if pdf:
         try:
             txt = fetch_pdf_text(pdf)
@@ -378,27 +421,31 @@ def evaluate(it, src, state):
         if txt:
             ktext += ' ' + norm(txt)
             count, match = analyse_pdf(txt)
-            if count == 0 and sc == 'unknown':
+            if count == 0 and sc in ('unknown', 'other'):
                 return None
+            if sc == 'other':
+                sc = 'pdf'  # النصّ يذكر محافظات أخرى، وفي ملفّ الشواغر وظائف تشمل حماة
             if count == 0:
                 hint = '📄 لم أجد حماة صراحةً في ملفّ الشواغر، راجعه بنفسك.'
             elif match:
                 named = [m for m in dict.fromkeys(match) if m != '؟']
+                shown = '، '.join(named[:MAX_NAMED]) + (
+                    f'، وغيرها ({len(named) - MAX_NAMED})' if len(named) > MAX_NAMED else '')
                 hint = (f'📄 عدد الوظائف التي تشمل حماة في ملفّ الشواغر: {count}، منها {len(match)} قد تناسب شهادتك'
-                        + (': ' + '، '.join(named) if named else ' (عناوينها غير مقروءة آليًّا، افتح الملفّ)'))
+                        + (': ' + shown if named else ' (عناوينها غير مقروءة آليًّا، افتح الملفّ)'))
             else:
                 hint = (f'📄 عدد الوظائف التي تشمل حماة في ملفّ الشواغر: {count}، ولم أجد بينها اختصاص '
                         'اللغة العربية أو «أيّ اختصاص» صراحةً. راجعه بنفسك.')
+        elif sc == 'other':
+            return None  # محافظة أخرى، وملفّ الشواغر غير مقروء
         else:
             hint = '📄 تعذّرت قراءة ملفّ الشواغر آليًّا، راجعه بنفسك.'
     if LOW.search(ktext) and not UNI.search(ktext):
         return None  # وظائف الفئتين الرابعة والخامسة فقط: لا تخصّ شهادته
     if dl is None and pdf is None and sc == 'unknown' and not src.get('trusted_gov'):
         return None
-    state['seen_set'].add(fp)
-    state['codes_set'] |= hiring
     return {'item': it, 'src': it.get('source_name') or src['name'], 'scope': sc,
-            'deadline': dl, 'hint': hint, 'kind': kind(ktext)}
+            'deadline': dl, 'hint': hint, 'kind': kind(ktext), 'marks': {fp}, 'codes': hiring}
 
 
 # ------------------------------------------------------------------ تيلغرام: الإرسال
@@ -412,33 +459,48 @@ def excerpt(text, n=900):
     return s if len(s) <= n else s[:n].rsplit(' ', 1)[0] + ' …'
 
 
-def fmt(res):
+TG_MAX = 4000  # حدّ تيلغرام 4096 حرفًا، ويُترك هامش
+
+
+def fmt(res, limit=TG_MAX):
+    """نصّ الرسالة. إن طال قُصِّر المقتطف ثمّ التلميح، ويبقى الرابط في آخرها."""
     it, e = res['item'], html.escape
     head = f"🏛 <b>{e(res['src'])}</b>"
     if it.get('date'):
         head += ' — ' + it['date'].astimezone().strftime('%Y-%m-%d')
-    parts = [head, e(excerpt(it['text'])), f"📍 النطاق: {SCOPE_AR[res['scope']]}",
-             f"📑 نوع التوظيف: {res['kind']}"]
+    info = [f"📍 النطاق: {SCOPE_AR[res['scope']]}", f"📑 نوع التوظيف: {res['kind']}"]
     if res['deadline']:
-        parts.append(f"⏳ آخر موعد: {res['deadline']:%d/%m/%Y}")
-    if res['hint']:
-        parts.append(e(res['hint']))
+        info.append(f"⏳ آخر موعد: {res['deadline']:%d/%m/%Y}")
+    tail = []
     if it['text'].rstrip().endswith('…') and not it.get('links'):
-        parts.append('✂️ النصّ مقتطع في المصدر، افتح الرابط لقراءته كاملًا.')
-    parts.append(f"🔗 {e(it['url'])}")
-    return '\n\n'.join(parts)
+        tail.append('✂️ النصّ مقتطع في المصدر، افتح الرابط لقراءته كاملًا.')
+    tail.append(f"🔗 {e(it['url'])}")
+
+    def build(n, hint):
+        return '\n\n'.join([head, e(excerpt(it['text'], n))] + info + ([e(hint)] if hint else []) + tail)
+
+    hint = res['hint'] or ''
+    for n in (900, 500, 200):
+        msg = build(n, hint)
+        if len(msg) <= limit:
+            return msg
+    while len(msg) > limit and len(hint) > 1:
+        hint = hint[: len(hint) * 3 // 4].rstrip()
+        msg = build(200, hint + ' …')
+    return msg
 
 
 def api(cfg, method):
     return f"https://api.telegram.org/bot{cfg['bot_token']}/{method}"
 
 
-def tg_send(cfg, text):
+def tg_send(cfg, text, parse_mode='HTML'):
+    data = {'chat_id': cfg['chat_id'], 'text': text, 'disable_web_page_preview': 'true'}
+    if parse_mode:
+        data['parse_mode'] = parse_mode
     for _ in range(4):
         try:
-            j = requests.post(api(cfg, 'sendMessage'), timeout=30, data={
-                'chat_id': cfg['chat_id'], 'text': text[:4000], 'parse_mode': 'HTML',
-                'disable_web_page_preview': 'true'}).json()
+            j = requests.post(api(cfg, 'sendMessage'), timeout=30, data=data).json()
         except Exception as ex:
             log.warning('send: %s', ex)
             time.sleep(5)
@@ -449,6 +511,9 @@ def tg_send(cfg, text):
         ra = (j.get('parameters') or {}).get('retry_after')
         if not ra:
             log.error('send failed: %s', j)
+            if parse_mode and j.get('error_code') == 400:
+                # رفض تيلغرام التنسيق أو الطول: تُرسل نصًّا خالصًا بدل أن تضيع
+                return tg_send(cfg, html.unescape(re.sub(r'<[^>]+>', '', text))[:4096], None)
             return False
         time.sleep(ra + 1)
     return False
@@ -597,6 +662,20 @@ def save_json(p, data):
     tmp.replace(p)
 
 
+def save_state(state, touched):
+    """يحفظ الحالة. ما ظهر في هذا الفحص (touched) يُنقل إلى آخر قائمة seen، فلا يُقصّ منها
+    ما زال منشورًا (وظيفة طويلة الأجل في بوّابة التوظيف مثلًا) فيُرسل من جديد."""
+    seen, olds = state['seen_set'], set(state['seen'])
+    order = [x for x in state['seen'] if x not in touched]
+    order += [x for x in touched if x in seen]
+    order += [x for x in seen if x not in olds and x not in touched]
+    out = {k: v for k, v in state.items() if k not in ('seen_set', 'codes_set')}
+    out['seen'] = order[-8000:]
+    oldc = set(state['codes'])
+    out['codes'] = (state['codes'] + sorted(c for c in state['codes_set'] if c not in oldc))[-2000:]
+    save_json(STATE_PATH, out)
+
+
 def note_fail(cfg, state, name, err):
     n = state['fail'].get(name, 0) + 1
     state['fail'][name] = n
@@ -615,36 +694,42 @@ def run():
     state['seen_set'], state['codes_set'] = set(state['seen']), set(state['codes'])
     days = cfg.get('first_run_lookback_days', 30) if first else cfg.get('lookback_days', 5)
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    found = []
+    # found: ما سيُرسل. pending: معرّفاته وبصماته، حتّى لا يُقبل مرّتين في هذا الفحص.
+    # touched: كلّ ما ظهر في هذا الفحص (انظر save_state).
+    # المرفوض يُسجَّل في seen فورًا، أمّا المقبول فلا يُسجَّل إلّا بعد وصول رسالته، فما لم يصل يُعاد في الفحص التالي.
+    found, pending, touched = [], set(), {}
 
     def consider(items, src):
         for it in items:
-            if it['id'] in state['seen_set']:
+            touched[it['id']] = None
+            if it['id'] in state['seen_set'] or it['id'] in pending:
                 continue
-            state['seen_set'].add(it['id'])
             s = dict(src, assume_hama=it.get('assume_hama', src.get('assume_hama')))
             if it.get('direct'):
-                dl, dt = it['direct'].get('deadline'), it.get('date')
-                if dl and dl < date.today():
+                if expired(it['direct'].get('deadline'), it.get('date')):
+                    state['seen_set'].add(it['id'])
                     continue
-                if not dl and dt and dt < datetime.now(timezone.utc) - timedelta(days=14):
-                    continue
-                found.append(dict(it['direct'], item=it, src=src['name']))
+                pending.add(it['id'])
+                found.append(dict(it['direct'], item=it, src=src['name'], marks={it['id']}, codes=set()))
                 continue
             try:
-                res = evaluate(it, s, state)
+                res = evaluate(it, s, state, pending)
             except Exception as e:
                 log.exception('evaluate %s: %s', it['id'], e)
-                res = None
+                continue  # يُعاد الحكم عليه في الفحص التالي
             if res:
+                res['marks'].add(it['id'])
+                pending.update(res['marks'], res['codes'])
                 found.append(res)
+            else:
+                state['seen_set'].add(it['id'])
 
     for src in cfg.get('sources', []):
         if not src.get('enabled', True):
             continue
         try:
             items = {'telegram': collect_tg, 'rss': collect_rss, 'tawzeef': collect_tawzeef,
-                     'webpage': collect_webpage}[src['type']](src, cutoff)
+                     'webpage': collect_webpage}[src['type']](src, cutoff, state['seen_set'])
             state['fail'][src['name'] + '|' + src.get('url', src.get('channel', ''))] = 0
         except Exception as e:
             note_fail(cfg, state, src['name'] + '|' + src.get('url', src.get('channel', '')), e)
@@ -666,22 +751,36 @@ def run():
 
     far = datetime(1970, 1, 1, tzinfo=timezone.utc)
     found.sort(key=lambda r: r['item'].get('date') or far)
-    sent = 0
+    sent = failed = 0
     for r in found:
         if tg_send(cfg, fmt(r)):
             sent += 1
+            state['seen_set'].update(r['marks'])
+            state['codes_set'].update(r['codes'])
+            save_state(state, touched)  # بعد كلّ رسالة: إن توقّف التشغيل في منتصفه لم يتكرّر ما وصل
             log.info('sent: %s | %s', r['src'], r['item']['url'])
+        else:
+            failed += 1
+            log.error('not sent, will retry next scan: %s | %s', r['src'], r['item']['url'])
     if first:
         tg_send(cfg, f'✅ بدأ تتبّع الوظائف الحكومية في حماة. أرسلت {sent} إعلانًا ما زال باب التقديم فيه '
                      f'مفتوحًا من آخر {days} يومًا. من الآن سأرسل الجديد فقط.')
+    # scan_failing يكتبه ملفّ التشغيل حين يفشل فحص وينبّه، فأوّل فحص ناجح بعده يخبر بعودته.
+    if state.get('scan_failing') and tg_send(cfg, '✅ عاد فحص الوظائف يعمل.'):
+        state.pop('scan_failing')
+    # DUE_ERROR: لم يفهم due.py سطر المواعيد، فصارت كلّ نبضة تفحص احتياطًا. يُنبَّه مرّةً واحدة.
+    if os.environ.get('DUE_ERROR'):
+        if not state.get('due_error') and tg_send(
+                cfg, '⚠️ سطر المواعيد SLOTS في ملفّ التشغيل لا يُفهم، فصار البوت يفحص كلّ ساعة احتياطًا. '
+                     'صحّحه بصيغة مثل: 09:07 12:07 15:07 18:07'):
+            state['due_error'] = True
+    else:
+        state.pop('due_error', None)
     state['first_done'] = True
-    old = state['seen']; olds = set(old)
-    state['seen'] = (old + [x for x in state.pop('seen_set') if x not in olds])[-8000:]
-    state['codes'] = list(state.pop('codes_set'))[-2000:]
     state['last_run'] = datetime.now().isoformat(timespec='seconds')
-    save_json(STATE_PATH, state)
-    log.info('run done: %d candidates, %d sent', len(found), sent)
-    print(f'تمّ: {sent} رسالة.')
+    save_state(state, touched)
+    log.info('run done: %d candidates, %d sent, %d failed', len(found), sent, failed)
+    print(f'تمّ: {sent} رسالة' + (f'، وتعذّر إرسال {failed} (يُعاد في الفحص التالي).' if failed else '.'))
 
 
 if __name__ == '__main__':
