@@ -117,6 +117,9 @@ jobs:
 
       - name: الفحص
         if: steps.plan.outputs.mode == 'scan'
+        env:
+          # الحَكَم (ai.py). إن غاب المفتاح أو تعطّل حكمت القواعد كما كانت.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python jobwatch.py
 
       - name: حذف config.json

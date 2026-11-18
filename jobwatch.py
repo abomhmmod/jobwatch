@@ -16,6 +16,8 @@ from urllib.parse import quote
 import requests
 from bs4 import BeautifulSoup
 
+import ai
+
 BASE = Path(__file__).resolve().parent
 CFG_PATH, STATE_PATH = BASE / 'config.json', BASE / 'state.json'
 FB_PROFILE = BASE / 'fb_profile'
@@ -391,38 +393,80 @@ PDF_LINK = re.compile(r'bit\.ly/hiring|drive\.google\.com/file')
 MAX_NAMED = 10  # أكثر عناوين الوظائف المناسبة التي تُكتب في الرسالة
 
 
-def evaluate(it, src, state, pending=frozenset()):
+# الشبكة الواسعة: ما فيه كلمة توظيف يُعرض على الحَكَم (ai.py)، وما خلا منها لا يُسأل عنه.
+# تشمل كلّ ما تلتقطه القواعد (JOB وWEAK_JOB وCONTEST)، فلا يفوت الحَكَمَ ما كانت القواعد ستراه.
+LOOSE = R(r'توظيف|تعيين|تعاقد|شاغر|شواغر|مسابقة|فرص عمل|فرصة عمل|فرصة وظيفية|باب التقدم|طلبات التوظيف')
+
+
+def loose(t):
+    return bool(LOOSE.search(t) or JOB.search(t) or WEAK_JOB.search(t) or CONTEST.search(t))
+
+
+def evaluate(it, src, state, pending=frozenset(), judge=None):
     """يحكم على المنشور دون أن يغيّر الحالة. ما يُسجَّل بعد وصول الرسالة يعود في النتيجة
-    (marks: البصمة، codes: رموز ملفّات الشواغر). pending: ما قُبل في هذا الفحص ولم يُرسل بعد."""
+    (marks: البصمة، codes: رموز ملفّات الشواغر). pending: ما قُبل في هذا الفحص ولم يُرسل بعد.
+
+    الحَكَم (Gemini) يجيب عن ثلاثة أسئلة: أهو إعلانٌ يُتقدَّم إليه؟ أحكوميّةٌ الجهة؟ أين العمل؟
+    وتُحسب القواعد بجانبه: إن تعذّر الحَكَم حكمت القواعد (ai=None في النتيجة)، وإن رفض الحَكَم ما كانت
+    القواعد سترسله عاد المنشور بعلامة quiet فيُرسل رسالةً صامتة للمراجعة بدل أن يختفي.
+    judge: للتجربة (ai_replay.py)؛ الأصل ai.judge."""
     t = norm(it['text'])
-    if not is_job(t):
-        return None
-    if not src.get('trusted_gov') and not is_gov(t):
-        return None
-    if it.get('strict_gov') and not STRONG_GOV.search(t):
+    if not loose(t):
         return None
     links = it.get('links', [])
     pdf = next((l for l in links if PDF_LINK.search(l)), None)
-    sc = scope(t)
-    if sc == 'other' and not pdf:
-        return None  # محافظة أخرى، ولا ملفّ شواغر قد تكون فيه حماة
-    if sc == 'unknown' and src.get('assume_hama'):
-        sc = 'hama'
-    dl = deadline(t)
-    if expired(dl, it.get('date')):
-        return None
     fp = 'fp:' + (it.get('key') or fingerprint(it['text']))
     codes = set(re.findall(r'(?:hiring|applying)\d{6,}', it['text'] + ' ' + ' '.join(links)))
     hiring = {c for c in codes if c.startswith('hiring')}
     if fp in state['seen_set'] or fp in pending or hiring & (state['codes_set'] | pending):
         return None
+    trusted = bool(src.get('trusted_gov'))
+    pdf_cache = {}
+    by_rules = decide(it, src, t, pdf, is_job(t), trusted or is_gov(t), scope(t), None, pdf_cache)
+    v = (judge or ai.judge)(it['text'], it.get('source_name') or src['name'])
+    if v is None:
+        res = by_rules
+    else:
+        place = v.get('place') if v.get('place') in ('hama', 'all', 'other', 'unknown') else 'unknown'
+        res = decide(it, src, t, pdf, bool(v.get('is_call')), trusted or v.get('employer') != 'private',
+                     place, v, pdf_cache)
+        if res:
+            res['ai_only'] = by_rules is None
+        elif by_rules:
+            res = dict(by_rules, quiet=True)
+    if res:
+        res.update(ai=v, marks={fp}, codes=hiring)
+    return res
+
+
+def decide(it, src, t, pdf, job, gov, sc, v, pdf_cache):
+    """بقيّة الحكم بعد الأسئلة الثلاثة: المكان، وآخر موعد، وملفّ الشواغر، والفئات الدنيا.
+    v: جواب الحَكَم أو None (القواعد وحدها)."""
+    if not job or not gov:
+        return None
+    if it.get('strict_gov') and not STRONG_GOV.search(t):
+        return None
+    if sc == 'other' and not pdf:
+        return None  # محافظة أخرى، ولا ملفّ شواغر قد تكون فيه حماة
+    if sc == 'unknown' and src.get('assume_hama'):
+        sc = 'hama'
+    dl = deadline(t)
+    if dl is None and v and v.get('deadline'):
+        try:
+            dl = date.fromisoformat(v['deadline'][:10])
+        except ValueError:
+            pass
+    if expired(dl, it.get('date')):
+        return None
     hint, ktext = None, t
     if pdf:
-        try:
-            txt = fetch_pdf_text(pdf)
-        except Exception as e:
-            log.warning('PDF %s: %s', pdf, e)
-            txt = None
+        if pdf not in pdf_cache:
+            try:
+                pdf_cache[pdf] = fetch_pdf_text(pdf)
+            except Exception as e:
+                log.warning('PDF %s: %s', pdf, e)
+                pdf_cache[pdf] = None
+        txt = pdf_cache[pdf]
         if txt:
             ktext += ' ' + norm(txt)
             count, match = analyse_pdf(txt)
@@ -446,12 +490,16 @@ def evaluate(it, src, state, pending=frozenset()):
             return None  # محافظة أخرى، وملفّ الشواغر غير مقروء
         else:
             hint = '📄 تعذّرت قراءة ملفّ الشواغر آليًّا، راجعه بنفسك.'
-    if LOW.search(ktext) and not UNI.search(ktext):
-        return None  # وظائف الفئتين الرابعة والخامسة فقط: لا تخصّ شهادته
+    # وظائف الفئتين الرابعة والخامسة فقط لا تخصّ شهادته. الحَكَم يحكم في نصّ المنشور، والقاعدة في ملفّ الشواغر.
+    if v and not (pdf and pdf_cache.get(pdf)):
+        if v.get('low_only'):
+            return None
+    elif LOW.search(ktext) and not UNI.search(ktext):
+        return None
     if dl is None and pdf is None and sc == 'unknown' and not src.get('trusted_gov'):
         return None
     return {'item': it, 'src': it.get('source_name') or src['name'], 'scope': sc,
-            'deadline': dl, 'hint': hint, 'kind': kind(ktext), 'marks': {fp}, 'codes': hiring}
+            'deadline': dl, 'hint': hint, 'kind': kind(ktext)}
 
 
 # ------------------------------------------------------------------ تيلغرام: الإرسال
@@ -477,6 +525,12 @@ def fmt(res, limit=TG_MAX):
     info = [f"📍 النطاق: {SCOPE_AR[res['scope']]}", f"📑 نوع التوظيف: {res['kind']}"]
     if res['deadline']:
         info.append(f"⏳ آخر موعد: {res['deadline']:%d/%m/%Y}")
+    v = res.get('ai')
+    if v:
+        info.append(f"🤖 {e(v.get('reason', ''))}"
+                    + (' (قبله الحَكَم وحده، والقواعد كانت سترفضه)' if res.get('ai_only') else ''))
+    elif 'ai' in res and os.environ.get('GEMINI_API_KEY'):
+        info.append('⚠️ لم يفحصه الذكاء هذه المرّة، فحكمت فيه القواعد.')
     tail = []
     if it['text'].rstrip().endswith('…') and not it.get('links'):
         tail.append('✂️ النصّ مقتطع في المصدر، افتح الرابط لقراءته كاملًا.')
@@ -500,8 +554,21 @@ def api(cfg, method):
     return f"https://api.telegram.org/bot{cfg['bot_token']}/{method}"
 
 
-def tg_send(cfg, text, parse_mode='HTML'):
+def fmt_quiet(res):
+    """رسالة صامتة: منشورٌ كانت القواعد سترسله ورفضه الحَكَم، للمراجعة."""
+    it, e = res['item'], html.escape
+    return '\n\n'.join([
+        f"🔕 <b>للمراجعة:</b> رفضه الحَكَم، وكانت القواعد سترسله.",
+        f"🏛 {e(res['src'])}" + (' — ' + it['date'].astimezone().strftime('%Y-%m-%d') if it.get('date') else ''),
+        e(excerpt(it['text'], 300)),
+        f"🤖 {e(res['ai'].get('reason', ''))}",
+        f"🔗 {e(it['url'])}"])
+
+
+def tg_send(cfg, text, parse_mode='HTML', silent=False):
     data = {'chat_id': cfg['chat_id'], 'text': text, 'disable_web_page_preview': 'true'}
+    if silent:
+        data['disable_notification'] = 'true'
     if parse_mode:
         data['parse_mode'] = parse_mode
     for _ in range(4):
@@ -519,7 +586,7 @@ def tg_send(cfg, text, parse_mode='HTML'):
             log.error('send failed: %s', j)
             if parse_mode and j.get('error_code') == 400:
                 # رفض تيلغرام التنسيق أو الطول: تُرسل نصًّا خالصًا بدل أن تضيع
-                return tg_send(cfg, html.unescape(re.sub(r'<[^>]+>', '', text))[:4096], None)
+                return tg_send(cfg, html.unescape(re.sub(r'<[^>]+>', '', text))[:4096], None, silent)
             return False
         time.sleep(ra + 1)
     return False
@@ -759,12 +826,12 @@ def run():
     found.sort(key=lambda r: r['item'].get('date') or far)
     sent = failed = 0
     for r in found:
-        if tg_send(cfg, fmt(r)):
+        if tg_send(cfg, fmt_quiet(r), silent=True) if r.get('quiet') else tg_send(cfg, fmt(r)):
             sent += 1
             state['seen_set'].update(r['marks'])
             state['codes_set'].update(r['codes'])
             save_state(state, touched)  # بعد كلّ رسالة: إن توقّف التشغيل في منتصفه لم يتكرّر ما وصل
-            log.info('sent: %s | %s', r['src'], r['item']['url'])
+            log.info('%s: %s | %s', 'quiet' if r.get('quiet') else 'sent', r['src'], r['item']['url'])
         else:
             failed += 1
             log.error('not sent, will retry next scan: %s | %s', r['src'], r['item']['url'])

@@ -22,7 +22,7 @@ def old_is_job(t):
 def judge(rule, it, src):
     jw.is_job = rule
     st = {'seen_set': set(), 'codes_set': set()}
-    return jw.evaluate(it, dict(src, assume_hama=src.get('assume_hama')), st) is not None
+    return jw.evaluate(it, dict(src, assume_hama=src.get("assume_hama")), st, judge=lambda *a: None) is not None
 
 
 n = acc_old = acc_new = 0

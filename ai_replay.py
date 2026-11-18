@@ -17,25 +17,16 @@ gap = float(os.environ.get('AI_GAP', '5'))  # ثوانٍ بين طلبين، د�
 cfg = json.load(open('config.public.json', encoding='utf-8'))
 cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
-LOOSE = jw.R(r'توظيف|تعيين|تعاقد|شاغر|شواغر|مسابقة|فرص عمل|فرصة عمل|فرصة وظيفية|باب التقدم|طلبات التوظيف')
 jw.expired = lambda dl, dt: False
 jw.fetch_pdf_text = functools.lru_cache(maxsize=None)(jw.fetch_pdf_text)
-RULES = (jw.is_job, jw.is_gov, jw.scope)
 
 
 def verdict(it, src, v=None):
-    """هل يُرسل؟ بالقواعد (v=None) أو بحكم الحَكَم v."""
-    if v is None:
-        jw.is_job, jw.is_gov, jw.scope = RULES
-    else:
-        jw.is_job = lambda t: bool(v['is_call'])
-        jw.is_gov = lambda t: v['employer'] != 'private'
-        jw.scope = lambda t: v['place']
+    """هل يُرسل؟ بالقواعد (v=None) أو بحكم الحَكَم v. (رسالة المراجعة الصامتة لا تُعدّ إرسالًا.)"""
     st = {'seen_set': set(), 'codes_set': set()}
-    try:
-        return jw.evaluate(it, dict(src, assume_hama=it.get('assume_hama', src.get('assume_hama'))), st) is not None
-    finally:
-        jw.is_job, jw.is_gov, jw.scope = RULES
+    res = jw.evaluate(it, dict(src, assume_hama=it.get('assume_hama', src.get('assume_hama'))), st,
+                      judge=lambda *a: v)
+    return bool(res) and not res.get('quiet')
 
 
 rows, seen_urls = [], set()
@@ -49,7 +40,7 @@ for src in cfg['sources']:
         continue
     for it in items:
         key = it['id']
-        if key in seen_urls or not LOOSE.search(jw.norm(it['text'])):
+        if key in seen_urls or not jw.loose(jw.norm(it['text'])):
             continue
         seen_urls.add(key)
         rule = verdict(it, src)
