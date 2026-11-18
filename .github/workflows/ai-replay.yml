@@ -1,0 +1,40 @@
+name: ai-replay
+# تجربة الحَكَم (Gemini) على منشورات الأيّام الماضية بجانب القواعد. لا يرسل شيئًا ولا يغيّر الحالة.
+# التقرير في ملحق التشغيل ai-report.
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'عدد الأيّام'
+        default: '30'
+      model:
+        description: 'اسم النموذج (فارغ = أوّل المتاح من القائمة في ai.py)'
+        default: ''
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TZ: Asia/Damascus
+      PYTHONUTF8: '1'
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ inputs.model }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -q -r requirements.txt
+      - name: المقارنة
+        run: python ai_replay.py "${{ inputs.days }}"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ai-report
+          path: |
+            ai_report.json
+            jobwatch.log
+          if-no-files-found: warn

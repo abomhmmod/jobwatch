@@ -3,3 +3,4 @@ jobwatch.log
 __pycache__/
 *.tmp
 fb_profile/
+ai_report.json
