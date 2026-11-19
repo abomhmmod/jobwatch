@@ -87,7 +87,15 @@ PDF_SCHEMA = {
     'propertyOrdering': ['readable', 'has_place_cards', 'hama_count', 'matching', 'low_only', 'reason'],
 }
 
+# القويّة تُجرَّب أوّلًا بالترتيب (طلب المستخدم 2026-11-19: الأقوى ما اتّسعت الحصّة؛ والحَكَم نحو 5 طلبات في اليوم).
+# لكلٍّ منها في المستوى المجّانيّ 20 طلبًا في اليوم و5 في الدقيقة، وكثيرًا ما تنشغل: فلكلٍّ محاولةٌ واحدة، وما تعذّر
+# يُترك بقيّة التشغيل، ثمّ السريع من PREFER بمحاولاته المعتادة. GEMINI_MODEL إن عُيّن يُستعمل وحده.
+STRONG = ('gemini-3-flash-preview', 'gemini-4-hydrogen', 'gemini-3.6-flash', 'gemini-2.5-flash')
+STRONG_TIMEOUT = 60
+
 _model = None
+_names = set()     # النماذج المتاحة للمفتاح
+_rested = set()    # القويّة التي تعذّرت في هذا التشغيل
 _down_until = 0.0  # بعد خطأ الحصّة اليوميّة لا يُعاد الطلب في هذا التشغيل
 
 
@@ -97,7 +105,7 @@ def _key():
 
 def model():
     """اسم النموذج المستعمَل (يُسأل عن المتاح مرّةً في كلّ تشغيل)."""
-    global _model
+    global _model, _names
     if _model:
         return _model
     if os.environ.get('GEMINI_MODEL'):
@@ -107,6 +115,7 @@ def model():
     r.raise_for_status()
     names = {m['name'].split('/', 1)[1] for m in r.json().get('models', [])
              if 'generateContent' in m.get('supportedGenerationMethods', [])}
+    _names = names
     _model = next((m for m in PREFER if m in names), None)
     if not _model:
         raise RuntimeError('لا نموذج مناسبًا بين المتاح: ' + ', '.join(sorted(names)[:30]))
@@ -157,6 +166,14 @@ def _ask(parts, schema, check):
         log.warning('AI unavailable (models): %s', e)
         _down_until = time.time() + 3600
         return None
+    if not os.environ.get('GEMINI_MODEL'):
+        for m in STRONG:
+            if m not in _names or m in _rested:
+                continue
+            v = _ask_once(m, body, check)
+            if v is not None:
+                return v
+            _rested.add(m)
     for attempt in range(4):
         try:
             r = requests.post(url, json=body, headers={'x-goog-api-key': _key()}, timeout=120)
@@ -184,6 +201,28 @@ def _ask(parts, schema, check):
             continue
         log.warning('AI HTTP %s: %s', r.status_code, r.text[:300])
         return None
+    return None
+
+
+def _ask_once(m, body, check):
+    """محاولةٌ واحدة بنموذجٍ قويّ: الجواب، أو None إن تعذّر بأيّ سبب (فيُترك بقيّة التشغيل)."""
+    try:
+        r = requests.post(f'{API}/models/{m}:generateContent', json=body, headers={'x-goog-api-key': _key()},
+                          timeout=STRONG_TIMEOUT)
+    except requests.RequestException as e:
+        log.info('AI %s skipped: %s', m, type(e).__name__)
+        return None
+    if r.status_code != 200:
+        log.info('AI %s skipped: HTTP %s', m, r.status_code)
+        return None
+    try:
+        parts = r.json()['candidates'][0]['content']['parts']
+        v = json.loads(''.join(p.get('text', '') for p in parts))
+        if isinstance(v, dict) and check in v:
+            log.info('AI answered by %s', m)
+            return v
+    except Exception as e:
+        log.info('AI %s answer unreadable: %s', m, e)
     return None
 
 
