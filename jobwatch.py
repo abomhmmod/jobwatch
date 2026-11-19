@@ -181,12 +181,18 @@ def tg_page(channel, q=None, before=None):
     out = []
     for m in BeautifulSoup(r.text, 'html.parser').select('div.tgme_widget_message'):
         post, tx = m.get('data-post') or '', m.select_one('.tgme_widget_message_text')
-        if not post or not tx:
+        # صور المنشور: يقرؤها الحَكَم مع نصّه، فتفاصيل كثيرٍ من الإعلانات في صورتها وحدها
+        images = [u[1] for u in (re.search(r"url\('([^']+)'\)", p.get('style', ''))
+                                 for p in m.select('.tgme_widget_message_photo_wrap')) if u]
+        if not post or not (tx or images):
             continue
         tm = m.select_one('a.tgme_widget_message_date time[datetime]') or m.select_one('time[datetime]')
-        out.append({'id': 'tg:' + post, 'text': tx.get_text('\n'), 'url': 'https://t.me/' + post,
-                    'date': datetime.fromisoformat(tm['datetime']) if tm else None,
-                    'links': [a.get('href', '') for a in tx.select('a[href]')]})
+        it = {'id': 'tg:' + post, 'text': tx.get_text('\n') if tx else '', 'url': 'https://t.me/' + post,
+              'date': datetime.fromisoformat(tm['datetime']) if tm else None,
+              'links': [a.get('href', '') for a in tx.select('a[href]')] if tx else [], 'images': images}
+        if not tx:
+            it['key'] = post  # بلا نصّ تتطابق البصمات كلّها، فيكون المنشور نفسه بصمته
+        out.append(it)
     return out
 
 
@@ -326,13 +332,14 @@ def collect_webpage(src, cutoff, seen=frozenset()):
 
 
 # ------------------------------------------------------------------ ملفّ الشواغر (PDF)
-def fetch_pdf_text(url):
+def fetch_pdf(url):
+    """(نصّ الملفّ أو None، بايتاته أو None). الملفّ الممسوح ضوئيًّا يعيد نصًّا None وبايتاته."""
     r = requests.get(url, headers=UA, timeout=60, allow_redirects=True)
     data = r.content
     if not data.startswith(b'%PDF'):
         m = re.search(r'/d/([\w-]{20,})', r.url) or re.search(r'[?&]id=([\w-]{20,})', r.url)
         if not m:
-            return None
+            return None, None
         data = b''
         for u, p in (('https://drive.google.com/uc', {'export': 'download', 'id': m[1]}),
                      ('https://drive.usercontent.google.com/download',
@@ -341,14 +348,38 @@ def fetch_pdf_text(url):
             if data.startswith(b'%PDF'):
                 break
         if not data.startswith(b'%PDF'):
-            return None
+            return None, None
     try:
         from pypdf import PdfReader
     except ImportError:
         from PyPDF2 import PdfReader
-    text = '\n'.join((pg.extract_text() or '') for pg in PdfReader(io.BytesIO(data)).pages)
-    # الملفّ الممسوح ضوئيًّا (صور) يعطي صفحات فارغة: يُعدّ غير مقروء، لا ملفًّا بلا وظائف في حماة
-    return text if len(re.findall(r'[^\W\d_]', text)) >= 40 else None
+    try:
+        text = '\n'.join((pg.extract_text() or '') for pg in PdfReader(io.BytesIO(data)).pages)
+    except Exception as e:
+        log.warning('PDF text: %s', e)
+        text = ''
+    # الملفّ الممسوح ضوئيًّا (صور) يعطي صفحات فارغة: لا نصّ فيه، فيقرؤه الحَكَم من صوره (read_pdf)
+    return (text if len(re.findall(r'[^\W\d_]', text)) >= 40 else None), data
+
+
+def fetch_pdf_text(url):
+    return fetch_pdf(url)[0]
+
+
+def read_pdf(url):
+    """ما في ملفّ الشواغر: {'text', 'count', 'match', 'cards', 'by_ai', 'low_only'}، أو None إن لم يُقرأ.
+    count: الوظائف التي تشمل حماة، match: عناوين ما يناسب الشهادة، cards: فيه بطاقات «محافظة العمل».
+    الملفّ النصّيّ يُحلَّل بالقواعد، والممسوح ضوئيًّا يقرؤه الحَكَم من صور صفحاته (by_ai)."""
+    text, data = fetch_pdf(url)
+    if text:
+        count, match = analyse_pdf(text)
+        return {'text': text, 'count': count, 'match': match, 'cards': 'محافظه العمل' in norm(text),
+                'by_ai': False, 'low_only': None}
+    v = ai.read_vacancies(data) if data else None
+    if not v:
+        return None
+    return {'text': None, 'count': int(v.get('hama_count') or 0), 'match': [str(t) for t in v.get('matching') or []],
+            'cards': bool(v.get('has_place_cards')), 'by_ai': True, 'low_only': bool(v.get('low_only'))}
 
 
 def analyse_pdf(text):
@@ -402,6 +433,17 @@ def loose(t):
     return bool(LOOSE.search(t) or JOB.search(t) or WEAK_JOB.search(t) or CONTEST.search(t))
 
 
+SHORT_TEXT = 200  # منشورٌ بصورة ونصٍّ أقصر من هذا قد يكون إعلانُه كلّه في الصورة، فيُعرض على الحَكَم ولو خلا من كلمات التوظيف
+
+
+def image_only(it, t):
+    return bool(it.get('images')) and len(t.strip()) < SHORT_TEXT
+
+
+class JudgeUnavailable(Exception):
+    """منشورٌ لا تحكم فيه القواعد (إعلانه في صورته) وتعذّر الحَكَم: يُعاد في الفحص التالي ولا يُسجَّل."""
+
+
 def evaluate(it, src, state, pending=frozenset(), judge=None):
     """يحكم على المنشور دون أن يغيّر الحالة. ما يُسجَّل بعد وصول الرسالة يعود في النتيجة
     (marks: البصمة، codes: رموز ملفّات الشواغر). pending: ما قُبل في هذا الفحص ولم يُرسل بعد.
@@ -409,9 +451,11 @@ def evaluate(it, src, state, pending=frozenset(), judge=None):
     الحَكَم (Gemini) يجيب عن ثلاثة أسئلة: أهو إعلانٌ يُتقدَّم إليه؟ أحكوميّةٌ الجهة؟ أين العمل؟
     وتُحسب القواعد بجانبه: إن تعذّر الحَكَم حكمت القواعد (ai=None في النتيجة)، وإن رفض الحَكَم ما كانت
     القواعد سترسله عاد المنشور بعلامة quiet فيُرسل رسالةً صامتة للمراجعة بدل أن يختفي.
-    judge: للتجربة (ai_replay.py)؛ الأصل ai.judge."""
+    judge: للتجربة (ai_replay.py)؛ الأصل ai.judge.
+    صور المنشور تُرسل إلى الحَكَم مع نصّه، والمنشور بصورةٍ ونصٍّ قصير يُعرض عليه وإن خلا من كلمات التوظيف."""
     t = norm(it['text'])
-    if not loose(t):
+    in_image = not loose(t) and image_only(it, t)
+    if not loose(t) and not in_image:
         return None
     links = it.get('links', [])
     pdf = next((l for l in links if PDF_LINK.search(l)), None)
@@ -423,7 +467,11 @@ def evaluate(it, src, state, pending=frozenset(), judge=None):
     trusted = bool(src.get('trusted_gov'))
     pdf_cache = {}
     by_rules = decide(it, src, t, pdf, is_job(t), trusted or is_gov(t), scope(t), None, pdf_cache)
-    v = (judge or ai.judge)(it['text'], it.get('source_name') or src['name'])
+    v = (judge or ai.judge)(it['text'], it.get('source_name') or src['name'], images=it.get('images') or ())
+    if v is None and in_image:
+        if judge is None and ai._key():
+            raise JudgeUnavailable(it['id'])
+        return None
     if v is None:
         res = by_rules
     else:
@@ -458,40 +506,46 @@ def decide(it, src, t, pdf, job, gov, sc, v, pdf_cache):
             pass
     if expired(dl, it.get('date')):
         return None
-    hint, ktext = None, t
+    hint, ktext, facts = None, t, None
     if pdf:
         if pdf not in pdf_cache:
             try:
-                pdf_cache[pdf] = fetch_pdf_text(pdf)
+                pdf_cache[pdf] = read_pdf(pdf)
             except Exception as e:
                 log.warning('PDF %s: %s', pdf, e)
                 pdf_cache[pdf] = None
-        txt = pdf_cache[pdf]
-        if txt:
-            ktext += ' ' + norm(txt)
-            count, match = analyse_pdf(txt)
+        facts = pdf_cache[pdf]
+        if facts:
+            if facts['text']:
+                ktext += ' ' + norm(facts['text'])
+            count, match = facts['count'], facts['match']
             # ملفّ فيه بطاقات «محافظة العمل» وليس في أيّ منها حماة: لا وظيفة لحماة، ولو قال النصّ «جميع المحافظات»
-            if count == 0 and (sc in ('unknown', 'other') or (sc == 'all' and 'محافظه العمل' in norm(txt))):
+            if count == 0 and (sc in ('unknown', 'other') or (sc == 'all' and facts['cards'])):
                 return None
             if sc == 'other':
                 sc = 'pdf'  # النصّ يذكر محافظات أخرى، وفي ملفّ الشواغر وظائف تشمل حماة
+            where = 'ملفّ الشواغر' + (' (قرأه الذكاء من صور صفحاته)' if facts['by_ai'] else '')
             if count == 0:
-                hint = '📄 لم أجد حماة صراحةً في ملفّ الشواغر، راجعه بنفسك.'
+                hint = f'📄 لم أجد حماة صراحةً في {where}، راجعه بنفسك.'
             elif match:
                 named = [m for m in dict.fromkeys(match) if m != '؟']
                 shown = '، '.join(named[:MAX_NAMED]) + (
                     f'، وغيرها ({len(named) - MAX_NAMED})' if len(named) > MAX_NAMED else '')
-                hint = (f'📄 عدد الوظائف التي تشمل حماة في ملفّ الشواغر: {count}، منها {len(match)} قد تناسب شهادتك'
+                hint = (f'📄 عدد الوظائف التي تشمل حماة في {where}: {count}، منها {len(match)} قد تناسب شهادتك'
                         + (': ' + shown if named else ' (عناوينها غير مقروءة آليًّا، افتح الملفّ)'))
             else:
-                hint = (f'📄 عدد الوظائف التي تشمل حماة في ملفّ الشواغر: {count}، ولم أجد بينها اختصاص '
+                hint = (f'📄 عدد الوظائف التي تشمل حماة في {where}: {count}، ولم أجد بينها اختصاص '
                         'اللغة العربية أو «أيّ اختصاص» صراحةً. راجعه بنفسك.')
         elif sc == 'other':
             return None  # محافظة أخرى، وملفّ الشواغر غير مقروء
         else:
             hint = '📄 تعذّرت قراءة ملفّ الشواغر آليًّا، راجعه بنفسك.'
-    # وظائف الفئتين الرابعة والخامسة فقط لا تخصّ شهادته. الحَكَم يحكم في نصّ المنشور، والقاعدة في ملفّ الشواغر.
-    if v and not (pdf and pdf_cache.get(pdf)):
+    # وظائف الفئتين الرابعة والخامسة فقط لا تخصّ شهادته: في ملفّ الشواغر النصّيّ تحكم القاعدة، وفي الممسوح
+    # ضوئيًّا ما قرأه الحَكَم من صوره، وفي نصّ المنشور الحَكَمُ (وإن تعذّر فالقاعدة).
+    if facts and facts['by_ai']:
+        if facts['low_only']:
+            return None
+    elif v and not facts:
         if v.get('low_only'):
             return None
     elif LOW.search(ktext) and not UNI.search(ktext):
@@ -526,6 +580,8 @@ def fmt(res, limit=TG_MAX):
     if res['deadline']:
         info.append(f"⏳ آخر موعد: {res['deadline']:%d/%m/%Y}")
     v = res.get('ai')
+    if v and v.get('image_text') and it.get('images'):
+        info.insert(0, f"🖼 من الصورة: {e(v['image_text'])}")
     if v:
         info.append(f"🤖 {e(v.get('reason', ''))}"
                     + (' (قبله الحَكَم وحده، والقواعد كانت سترفضه)' if res.get('ai_only') else ''))
@@ -537,7 +593,7 @@ def fmt(res, limit=TG_MAX):
     tail.append(f"🔗 {e(it['url'])}")
 
     def build(n, hint):
-        return '\n\n'.join([head, e(excerpt(it['text'], n))] + info + ([e(hint)] if hint else []) + tail)
+        return '\n\n'.join(x for x in [head, e(excerpt(it['text'], n))] + info + ([e(hint)] if hint else []) + tail if x)
 
     hint = res['hint'] or ''
     for n in (900, 500, 200):
@@ -560,7 +616,7 @@ def fmt_quiet(res):
     return '\n\n'.join([
         f"🔕 <b>للمراجعة:</b> رفضه الحَكَم، وكانت القواعد سترسله.",
         f"🏛 {e(res['src'])}" + (' — ' + it['date'].astimezone().strftime('%Y-%m-%d') if it.get('date') else ''),
-        e(excerpt(it['text'], 300)),
+        e(excerpt(it['text'], 300)) or '🖼 ' + e(res['ai'].get('image_text') or ''),
         f"🤖 {e(res['ai'].get('reason', ''))}",
         f"🔗 {e(it['url'])}"])
 
@@ -787,6 +843,9 @@ def run():
                 continue
             try:
                 res = evaluate(it, s, state, pending)
+            except JudgeUnavailable:
+                log.info('judge unavailable, retry next scan: %s', it['id'])
+                continue
             except Exception as e:
                 log.exception('evaluate %s: %s', it['id'], e)
                 continue  # يُعاد الحكم عليه في الفحص التالي
