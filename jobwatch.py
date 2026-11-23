@@ -325,10 +325,58 @@ def collect_webpage(src, cutoff, seen=frozenset()):
     if norm(src['empty_marker']) in norm(text):
         return []
     body = text.split(src.get('start_after', ''), 1)[-1] if src.get('start_after') else text
-    # بصمة الصفحة كلّها لا أوّلها: وظيفة تُضاف في آخر القائمة تغيّرها أيضًا
-    return [{'id': 'page:' + fingerprint(body), 'text': f"🆕 تغيّرت صفحة «{src['name']}» وظهر فيها محتوى جديد:\n{body}",
+    # بصمة الصفحة كلّها لا أوّلها: وظيفة تُضاف في آخر القائمة تغيّرها أيضًا. وما يتغيّر فيها بلا جديد
+    # (ignore: عدّاد «ينتهي التقديم خلال 27 يومًا» ينقص كلّ يوم) لا يدخل البصمة، وإلّا تكرّر التنبيه نفسه كلّ يوم.
+    stable = re.sub(src['ignore'], ' ', body) if src.get('ignore') else body
+    return [{'id': 'page:' + fingerprint(stable), 'text': f"🆕 تغيّرت صفحة «{src['name']}» وظهر فيها محتوى جديد:\n{body}",
              'url': src['url'], 'date': datetime.now(timezone.utc), 'links': [],
              'direct': {'scope': 'hama', 'deadline': None, 'hint': None, 'kind': 'افتح الصفحة'}}]
+
+
+# ------------------------------------------------------------------ المصادر: سيترا (دليل مستقلّ غير رسميّ)
+SYTRA_JOBS = 'https://sytra.me/api/v1/jobs'
+SYTRA_LEFT = {0: 'اليوم', 1: 'غدًا', 2: 'بعد غد'}
+
+
+def collect_sytra(src, cutoff, seen=frozenset()):
+    """إعلانات التوظيف في سيترا (sytra.me، بياناته برخصة CC BY 4.0 فيُذكر اسمه) التي تشمل المحافظة:
+    بطاقة لكلّ إعلان بمناصبه وموعده وروابطه، ثمّ تذكير واحد حين يبقى على إغلاقه remind_days يومًا أو أقلّ."""
+    jobs = requests.get(src.get('url', SYTRA_JOBS), headers=UA, timeout=40).json()['data']['jobs']
+    gov, remind, out = norm(src.get('governorate', 'حماة')), src.get('remind_days', 2), []
+    stub = lambda i: {'id': i, 'text': '', 'url': '', 'date': None, 'links': []}  # ما زال منشورًا
+    for it in jobs:
+        govs = [norm(g) for g in it.get('governorates') or []]
+        dl = date.fromisoformat(it['deadline']) if it.get('deadline') else None
+        if gov not in govs or it.get('status') == 'closed' or (dl and dl < date.today()):
+            continue
+        uid, left = f"sytra:{it['slug']}", (dl - date.today()).days if dl else None
+        due = remind is not None and left is not None and left <= remind
+        if uid in seen and (not due or uid + ':last' in seen):
+            out += [stub(uid)] + ([stub(uid + ':last')] if due else [])
+            continue
+        lines = [it['title'], f"الجهة: {it.get('entity') or '؟'}"]
+        if it.get('apply_url'):
+            lines.append(f"📝 التقديم: {it['apply_url']}")
+        if it.get('details_url') and it['details_url'] != it.get('apply_url'):
+            lines.append(f"📄 التفاصيل: {it['details_url']}")
+        for p in it.get('positions') or []:
+            lines.append('• ' + p['title'] + (f" (العدد: {p['count']})" if p.get('count') else '')
+                         + (f" — {p['qualification']}" if p.get('qualification') else ''))
+        text = '\n'.join(lines)
+        ns = norm(' '.join(p.get('qualification') or '' for p in it.get('positions') or [])).replace(' ', '')
+        hits = any(q in ns for q in QUAL)
+        ann = it.get('announced')
+        item = {'id': uid, 'text': text, 'url': it.get('page') or it.get('apply_url') or 'https://sytra.me/jobs',
+                'date': datetime.fromisoformat(ann + 'T12:00:00+00:00') if ann else None, 'links': [],
+                'direct': {'scope': 'all' if len(govs) >= 13 else 'hama', 'deadline': dl,
+                           'hint': '🎯 قد يناسب شهادتك' if hits else None, 'kind': kind(norm(text))}}
+        if uid in seen:  # أُرسلت بطاقته من قبل، وهذا تذكير الإغلاق
+            out.append(stub(uid))
+            item.update(id=uid + ':last', text=f"⏰ تذكير: يُغلق التقديم {SYTRA_LEFT.get(left, f'بعد {left} أيّام')}.\n{text}")
+        elif due:  # إعلان جديد على وشك الإغلاق: بطاقته تكفي، فلا تذكير بعدها
+            item['also'] = [uid + ':last']
+        out.append(item)
+    return out
 
 
 # ------------------------------------------------------------------ ملفّ الشواغر (PDF)
@@ -839,7 +887,8 @@ def run():
                     state['seen_set'].add(it['id'])
                     continue
                 pending.add(it['id'])
-                found.append(dict(it['direct'], item=it, src=src['name'], marks={it['id']}, codes=set()))
+                found.append(dict(it['direct'], item=it, src=src['name'], marks={it['id'], *it.get('also', ())},
+                                  codes=set()))
                 continue
             try:
                 res = evaluate(it, s, state, pending)
@@ -861,7 +910,7 @@ def run():
             continue
         try:
             items = {'telegram': collect_tg, 'rss': collect_rss, 'tawzeef': collect_tawzeef,
-                     'webpage': collect_webpage}[src['type']](src, cutoff, state['seen_set'])
+                     'webpage': collect_webpage, 'sytra': collect_sytra}[src['type']](src, cutoff, state['seen_set'])
             state['fail'][src['name'] + '|' + src.get('url', src.get('channel', ''))] = 0
         except Exception as e:
             note_fail(cfg, state, src['name'] + '|' + src.get('url', src.get('channel', '')), e)

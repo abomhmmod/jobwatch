@@ -19,7 +19,14 @@
       "type": "webpage",
       "url": "https://moad.gov.sy/recruitment/jobs?governorates=4",
       "empty_marker": "لا توجد وظائف متاحة حالياً",
-      "start_after": "جميع الوظائف في محافظة حماة"
+      "start_after": "جميع الوظائف في محافظة حماة",
+      "ignore": "ينتهي التقديم\\s+(?:خلال\\s+)?(?:\\d+\\s+)?\\S+"
+    },
+    {
+      "name": "سيترا — دليل مستقلّ غير رسميّ (sytra.me)",
+      "type": "sytra",
+      "governorate": "حماة",
+      "remind_days": 2
     },
     {
       "name": "مديرية التربية في حماة (تيلغرام)",
