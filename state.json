@@ -1711,6 +1711,10 @@
     "rss:https://sana.sy/international/2637675/",
     "fp:42d50afed9e8",
     "fp:938c0c38efcf",
+    "tg:SyrMOfF/10236",
+    "tg:SyrMOfF/10239",
+    "tg:SyMOEADM/9752",
+    "fp:HamaGov1/25296",
     "tg:SyMOAD/10048",
     "tg:SyMOAD/10049",
     "tg:SyMOAD/10054",
@@ -1821,6 +1825,7 @@
     "tg:SyMOSAAL/9227",
     "tg:SyMOSAAL/9231",
     "tg:SyMOSAAL/9232",
+    "tg:SyMOSAAL/9233",
     "tg:SyMOLAAE/15705",
     "tg:SyMOLAAE/15709",
     "tg:SyMOLAAE/15710",
@@ -1883,8 +1888,6 @@
     "tg:SyrMOfF/10259",
     "tg:SyrMOfF/10263",
     "tg:SyrMOfF/10265",
-    "tg:SyrMOfF/10236",
-    "tg:SyrMOfF/10239",
     "tg:SyrMOfF/10240",
     "tg:SyMOEAI/8539",
     "tg:SyMOEAI/8546",
@@ -1968,7 +1971,6 @@
     "tg:SyMOEADM/9782",
     "tg:SyMOEADM/9783",
     "tg:SyMOEADM/9784",
-    "tg:SyMOEADM/9752",
     "tg:SyMOEADM/9762",
     "tg:SyMOEADM/9763",
     "rss:https://sana.sy/governorates/2642223/",
@@ -2047,8 +2049,7 @@
     "rss:https://fedaa.alwehda.gov.sy/?p=131993#02a630ce4731",
     "rss:https://fedaa.alwehda.gov.sy/?p=131993#69481769b9a4",
     "rss:https://fedaa.alwehda.gov.sy/?p=131993#f5604da1e1ce",
-    "rss:https://fedaa.alwehda.gov.sy/?p=131993#2800045d47dd",
-    "fp:HamaGov1/25296"
+    "rss:https://fedaa.alwehda.gov.sy/?p=131993#2800045d47dd"
   ],
   "codes": [
     "hiring20261105",
@@ -2098,5 +2099,5 @@
     "سيترا — دليل مستقلّ غير رسميّ (sytra.me)|": 0
   },
   "first_done": true,
-  "last_run": "2026-11-23T08:46:57"
+  "last_run": "2026-11-23T09:49:38"
 }
